@@ -10,9 +10,10 @@ import string
 machineIPs = {}
 filesList = {}
 machinesState = {}
-numberOfDownloadLinks = 6
-numberOfNodes = 4
+NUMBER_OF_DOWNLOAD_MIRRORS = 6
+NUMBER_OF_NODES = 4
 MY_IP = "192.168.1.12"
+NUMBER_OF_REPLICAS = 2
 
 def clientHandler(id,port):
     #Initilize connection
@@ -38,7 +39,7 @@ def clientHandler(id,port):
                             mirrorList.extend(machineIPs[mirror])
 
                     #Get random download links
-                    mirrorList = random.sample(mirrorList,numberOfDownloadLinks)
+                    mirrorList = random.sample(mirrorList,NUMBER_OF_DOWNLOAD_MIRRORS)
                     dataSent = {"numberofchunks": numberOfChunks, "mirrorlist": mirrorList}
                     socket.send_json(json.dumps(dataSent))
                 else:
@@ -63,7 +64,7 @@ def aliveSignalReceiver(id,port):
     print("Alive checker process waiting on port %s"%port)
     lastCheck = {}
     TIME_OUT = 2
-    for i in range(numberOfNodes):
+    for i in range(NUMBER_OF_NODES):
         lastCheck[string.ascii_uppercase[i]] = time.time()
 
     context = zmq.Context()
@@ -85,12 +86,38 @@ def aliveSignalReceiver(id,port):
             except zmq.Again:
                 break
         
-        for i in range(numberOfNodes):
+        for i in range(NUMBER_OF_NODES):
             machine = string.ascii_uppercase[i]
             if machinesState[machine] == True and time.time() - lastCheck[machine] >= TIME_OUT:
                 machinesState[machine] = False
                 print("Machine %s is dead"%string.ascii_uppercase[i])
 
+###############################################################################
+###############################################################################
+
+
+def nodeTrackerHandler(id,port):
+    #Initilize connection
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://%s:%s" % (MY_IP,port))
+
+    while True:
+        message = socket.recv_json()
+        machine = message["machine"]
+        username = message["username"]
+        fileName = message["filename"]
+
+        machinesList = []
+        for i in range(NUMBER_OF_NODES):
+            replica = string.ascii_uppercase[i] 
+            if machineState[replica] == True and replica is not machine
+                machinesList.append(replica)
+                
+        
+        filesList[username][fileName] = []
+        filesList[username][fileName].append(machine)
+        filesList[username][fileName].extend(random.sample(machinesList,NUMBER_OF_REPLICAS))
 
 ###############################################################################
 ###############################################################################
@@ -116,7 +143,7 @@ if __name__ == '__main__':
     filesList = manager.dict()
 
     #set default values for machine states
-    for i in range(numberOfNodes):
+    for i in range(NUMBER_OF_NODES):
         machinesState[string.ascii_uppercase[i]] = False
     
     #Initizlize server ports
