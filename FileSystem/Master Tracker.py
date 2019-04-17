@@ -111,9 +111,9 @@ def nodeTrackerHandler(id,port):
         machinesList = []
         for i in range(NUMBER_OF_NODES):
             replica = string.ascii_uppercase[i] 
-            if machineState[replica] == True and replica is not machine
+            if machineState[replica] == True and replica != machine
                 machinesList.append(replica)
-                
+
         
         filesList[username][fileName] = []
         filesList[username][fileName].append(machine)
