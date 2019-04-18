@@ -196,13 +196,13 @@ def server(id,port):
 
 def initializeConstants():
     machineIPs = [
-        "192.168.1.5",
         "192.168.1.6",
-        "192.168.1.7",
-        "192.168.1.8"
+        "192.168.1.6",
+        "192.168.1.6",
+        "192.168.1.6"
     ]
 
-    replicationPort = 5590
+    replicationPort = 5556
     downloadUploadPort = 5580
 
     for i in range(NUMBER_OF_NODES):
