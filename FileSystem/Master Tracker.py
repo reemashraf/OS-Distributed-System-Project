@@ -71,21 +71,22 @@ def aliveSignalReceiver(id,port):
     socket = context.socket(zmq.SUB)
     socket.bind("tcp://%s:%s" % (MY_IP,port))
     socket.setsockopt_string(zmq.SUBSCRIBE, "alive")
-
-    # poller = zmq.Poller()
-    # poller.register(port, zmq.POLLIN)
+    
+    poller = zmq.Poller()
+    poller.register(socket, zmq.POLLIN)
 
     while True:
-        while True:
-            try:
-                message = socket.recv_string(zmq.DONTWAIT)
-                print("I received %s"%message)
-                topic, machine = message.split()
-                machinesState[machine] = True
-                lastCheck[machine] = time.time()
-            except zmq.Again:
-                break
-        
+        socks = dict(poller.poll(0))
+        # print("?")
+        if socket in socks:
+            message = socket.recv_string()
+            # print("I received %s"%message)
+            topic, machine = message.split()
+            if machinesState[machine] == False:
+                print("Machine %s is back"%machine)
+            machinesState[machine] = True
+            lastCheck[machine] = time.time()
+           
         for i in range(NUMBER_OF_NODES):
             machine = string.ascii_uppercase[i]
             if machinesState[machine] == True and time.time() - lastCheck[machine] >= TIME_OUT:
@@ -111,7 +112,7 @@ def nodeTrackerHandler(id,port):
         machinesList = []
         for i in range(NUMBER_OF_NODES):
             replica = string.ascii_uppercase[i] 
-            if machineState[replica] == True and replica != machine
+            if machineState[replica] == True and replica != machine:
                 machinesList.append(replica)
 
         
