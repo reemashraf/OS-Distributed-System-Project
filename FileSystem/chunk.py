@@ -66,4 +66,4 @@ file_path = Path( "./"+ "vid_2.mp4" )
 # deslice_file()
 #print(get_chunck_name_by_number( 16 , "./reem/trial.mp4"))
 #get_chunck_name_by_number, slice_file tested, deslice tested
-deslice_file("./reem/vid_1.mp4")
+#deslice_file("./reem/vid_1.mp4")
