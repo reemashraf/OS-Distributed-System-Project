@@ -14,7 +14,7 @@ client_server_port = 5556  #port where thre processes that uploads and downloads
 topic_alive = "alive"
 master_ACK_port = 5555
 process_order = "A"
-#replica_port = 5526
+replica_port = 5526
 number_of_replicas = 2
 
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
@@ -107,7 +107,24 @@ def replicate(file_path , replica_list , parsed_json):
     ACK = socket.recv_string()
     print( "ack after sending file", ACK)
 
-def recieve_replicas():
+def recieve_replica():
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://*:%s" % replica_port)
+    print("finished binding to replicas")
+    message = socket.recv()
+    p = zlib.decompress(message)
+    data = pickle.loads(p)
+    directory = "./" + parsed_json["username"]
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    with open(directory + "/"+ parsed_json["filename"], 'wb') as f:  
+        f.write(data)
+    socket.send_string("finished writting file, success")
+
+
+
+    
 
 
 #processes_alive = mp.Process(target=send_alive)
