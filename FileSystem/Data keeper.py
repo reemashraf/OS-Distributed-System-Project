@@ -14,14 +14,14 @@ my_ip = sc.gethostbyname(sc.gethostname())
 alive_port = 5600  #port where thre process that sends alive message is sent
 # client_server_port = 5556  #port where thre processes that uploads and downloads
 topic_alive = "alive"
-master_ACK_port = 5602
+master_ACK_port = 5603
 process_order = "A"
 replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5555 
 MASTER_IP = "192.168.1.12"
-print("Kill me please")
+machine_name = 'A'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -66,17 +66,17 @@ def download_uplaod(client_server_port):
             ####will slice here#### ###done and tested#######
             number_of_chunks = chunk.slice_file(directory + "./"+ parsed_json["filename"] , 64*1024)
             ########change to connect
-            socket.connect("tcp://%s:%s" % (MASTER_IP,master_ACK_port) )
+            socket_master_ack = context.socket(zmq.REQ)
+            socket_master_ack.connect("tcp://%s:%s" % (MASTER_IP,master_ACK_port) )
             header_data = {
-                "ip": "ID", ##ID instead don't forget to modify
+                "machine": machine_name, ##ID instead don't forget to modify
                 "username": parsed_json["username"],
                 "filename": parsed_json["filename"],
-                "numberOfchunks": number_of_chunks
+                "numberofchunks": number_of_chunks
                 }
             header_data_sent_to_master = json.dumps(header_data)
-            garbage = socket.recv() 
-            socket.send_json(header_data_sent_to_master)
-            replica_list_json = socket.recv_json()
+            socket_master_ack.send_json(header_data_sent_to_master)
+            replica_list_json = socket_master_ack.recv_json()
             replica_list = json.loads(replica_list_json)
             #####TO_do replicate to other machines#######
             '''
@@ -116,6 +116,7 @@ def replicate(file_path , replica_list , parsed_json):
     socket.send(z)
     ACK = socket.recv_string()
     print( "ack after sending file", ACK)
+    return replica_list,parsed_jason
 
 def recieve_replica(replica_port):
     context = zmq.Context()
@@ -135,8 +136,47 @@ def recieve_replica(replica_port):
         f.write(data)
     socket.send_string("finished writting file, success")
 
+#for testing purpose only
+def send_ack_master():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://%s:%s" % (MASTER_IP,master_ACK_port) )
+    header_data = {
+        "machine": machine_name, ##ID instead don't forget to modify
+        "username": "yasmeen",
+        "filename": "vid_1.mp4",
+        "numberofchunks": 15
+        }
+    header_data_sent_to_master = json.dumps(header_data)
+    socket.send_json(header_data_sent_to_master)
+    replica_list = socket.recv_json()
+    print(replica_list)
+    socket.close()
+    return replica_list
+
+
+def replicate_test(file_path , replica_list):
+    #here other nodes act as servers the one responsible for sending is the client
+    context = zmq.Context()
+    print ("Connecting to server (replica dataNodes)...")
+    socket = context.socket(zmq.REQ)
+    #list_values = [ replica_address for replica_address in replica_list.values()]
+    for replica_address in replica_list:
+        print(replica_list)
+        socket.connect ("tcp://%s" %replica_address)
+    f = open(file_path , 'rb')
+    p = pickle.dumps(f.read())
+    z = zlib.compress(p)
+    f.close()
+    socket.send(z)
+    ACK = socket.recv_string()
+    print("ack after sending header" , ACK)
+    # socket.close()
+    return replica_list
 
 def run(id , port):
+    my_name = chr(ord('A') + id)
+    print(my_name)
     t1 = threading.Thread(target=recieve_replica , args=[port])
     t2 = threading.Thread(target=download_uplaod , args=[port+1])
     t1.start()
@@ -145,23 +185,26 @@ def run(id , port):
     t1.join()
 
 if __name__ == '__main__':
-    print("Why!")
-    processes_alive = Process(target=send_alive)
-    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
-    processes_list = []
-    for i in range(NUMBER_OF_PROCESSES):
-        processes_list.append(Process(target = run ,args=(i , ports_list[i])))
-        # print(processes_list[i + 1])
+    # print("Why!")
+    # processes_alive = Process(target=send_alive)
+    # ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
+    # processes_list = []
+    # for i in range(NUMBER_OF_PROCESSES):
+    #     processes_list.append(Process(target = run ,args=(i , ports_list[i])))
+    #     # print(processes_list[i + 1])
 
-    processes_alive.start()
-    for process in processes_list:
-        process.start()
+    # processes_alive.start()
+    # for process in processes_list:
+    #     process.start()
 
 
-    for i in range(NUMBER_OF_PROCESSES):
-        processes_list[i].join()
+    # for i in range(NUMBER_OF_PROCESSES):
+    #     processes_list[i].join()
 
-    processes_alive.join()
-        
+    # processes_alive.join()
+    #replica_list = send_ack_master()
+    replicate_test("vid_1.mp4" , ["192.168.1.7:5526"])
+
+
 
 
