@@ -103,30 +103,35 @@ def replicate(file_path , replica_list , parsed_json):
     context = zmq.Context()
     print ("Connecting to server (replica dataNodes)...")
     socket = context.socket(zmq.REQ)
+
     list_values = [ replica_address for replica_address in replica_list.values()]
     for replica_address in list_values:
         socket.connect ("tcp:%s" %replica_address)
+    
     f = open(file_path , 'rb')
     p = pickle.dumps(f.read())
     z = zlib.compress(p)
     f.close()
+
     socket.send_json(parsed_json)
     ACK = socket.recv_string()
-    print("ack after sending header" , ACK)
+    print("ack after sending json header" , ACK)
     socket.send(z)
     ACK = socket.recv_string()
-    print( "ack after sending file", ACK)
-    return replica_list,parsed_jason
+    print("ack after sending file", ACK)
+    return 
 
 def recieve_replica(replica_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:%s" % replica_port)
     print("finished binding to replicas")
+
     json = socket.recv_json()
     parsed_json = json.loads()
-    socket.send_string("AY 7aga")
-    message = socket.recv()
+    socket.send_string("AY 7aga") #received the json and ACK is sent
+
+    message = socket.recv()#file is received
     p = zlib.decompress(message)
     data = pickle.loads(p)
     directory = "./" + parsed_json["username"]
@@ -171,6 +176,9 @@ def replicate_test(file_path , replica_list):
     socket.send(z)
     ACK = socket.recv_string()
     print("ack after sending header" , ACK)
+    socket.send(z)
+    ACK = socket.recv_string()
+    print("ack after sending header" , ACK)
     # socket.close()
     return replica_list
 
@@ -185,7 +193,6 @@ def run(id , port):
     t1.join()
 
 if __name__ == '__main__':
-    # print("Why!")
     # processes_alive = Process(target=send_alive)
     # ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
     # processes_list = []
@@ -203,7 +210,7 @@ if __name__ == '__main__':
 
     # processes_alive.join()
     #replica_list = send_ack_master()
-    replicate_test("vid_1.mp4" , ["192.168.1.7:5526"])
+    replicate_test("vid_1.mp4" , ["192.168.1.7:5526" , "192.168.1.7:5528"])
 
 
 

@@ -25,13 +25,13 @@ machine_name = 'A'
 
 
 
-def recieve_replica(replica_port):
+def recieve_replica(offset,replica_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://192.168.1.7:%s" % replica_port)
     print("finished binding to replicas")
     message = socket.recv()
-    print(message)
+    print(offset + " received")
     # parsed_json = json.loads()
     #socket.send_string("AY 7aga")
     p = zlib.decompress(message)
@@ -39,9 +39,15 @@ def recieve_replica(replica_port):
     # directory = "./" + json
     # if not os.path.exists(directory):
     #     os.makedirs(directory)
-    with open("./" + "test.mp4", 'wb') as f:  
+    with open("./" + "test"+offset +".mp4", 'wb') as f:  
         f.write(data)
     socket.send_string("finished writting file, success")
 
-
-recieve_replica(replica_port)
+if __name__ == "__main__":
+    process_1 = Process(target= recieve_replica , args=["1",5526])
+    process_2 = Process(target= recieve_replica , args=["2",5528])
+    process_1.start()
+    process_2.start()
+    process_1.join()
+    process_2.join()
+# recieve_replica(replica_port)
