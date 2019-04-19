@@ -104,22 +104,22 @@ def replicate(file_path , replica_list , parsed_json):
     print ("Connecting to server (replica dataNodes)...")
     socket = context.socket(zmq.REQ)
 
-    list_values = [ replica_address for replica_address in replica_list.values()]
-    for replica_address in list_values:
-        socket.connect ("tcp:%s" %replica_address)
+    #list_values = [ replica_address for replica_address in replica_list.values()]
+    for replica_address in replica_list:
+        print(replica_address)
+        socket.connect ("tcp://%s" %replica_address)
     
     f = open(file_path , 'rb')
     p = pickle.dumps(f.read())
     z = zlib.compress(p)
     f.close()
 
-    socket.send_json(parsed_json)
-    ACK = socket.recv_string()
-    print("ack after sending json header" , ACK)
-    socket.send(z)
-    ACK = socket.recv_string()
-    print("ack after sending file", ACK)
-    return 
+    parsed_json["file"] = z
+    for i in range(len(replica_list)):
+        socket.send(pickle.dumps(parsed_json))
+        ACK = socket.recv_string()
+        print("ack after sending json header" , ACK)
+ 
 
 def recieve_replica(replica_port):
     context = zmq.Context()
@@ -127,18 +127,23 @@ def recieve_replica(replica_port):
     socket.bind("tcp://*:%s" % replica_port)
     print("finished binding to replicas")
 
-    json = socket.recv_json()
-    parsed_json = json.loads()
-    socket.send_string("AY 7aga") #received the json and ACK is sent
+    #json = socket.recv_json()
+    #parsed_json = json.loads()
+    #socket.send_string("AY 7aga") #received the json and ACK is sent
 
-    message = socket.recv()#file is received
-    p = zlib.decompress(message)
-    data = pickle.loads(p)
+    json = socket.recv_json()#file and json is received
+    parsed_json = json.loads()
+    z = parsed_json["file"]
+    p = zlib.decompress(z)
+    sent_file = pickle.loads(p)
+    
+    #p = zlib.decompress(message)
+    #data = pickle.loads(p)
     directory = "./" + parsed_json["username"]
     if not os.path.exists(directory):
         os.makedirs(directory)
     with open(directory + "/"+ parsed_json["filename"], 'wb') as f:  
-        f.write(data)
+        f.write(sent_file)
     socket.send_string("finished writting file, success")
 
 #for testing purpose only
@@ -210,7 +215,24 @@ if __name__ == '__main__':
 
     # processes_alive.join()
     #replica_list = send_ack_master()
-    replicate_test("vid_1.mp4" , ["192.168.1.7:5526" , "192.168.1.7:5528"])
+    data = {
+        "filename" : "vid_1.mp4",
+        "username" : "reem_ashraf",
+        "mode"     : "download",
+        "numberofchunks": 52,
+        "machine" : "A"
+    }
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    port = 5558
+    socket.connect("tcp://192.168.1.9:%s" % port)
+    data_dumped = json.dumps(data)
+    socket.send_json(data_dumped)
+    replica_lis = socket.recv_json()
+    print(type(replica_lis))
+    replica_lis = json.loads(replica_lis)
+    print(type(replica_lis))
+    replicate("vid_1.mp4" , replica_lis ,data)
 
 
 
