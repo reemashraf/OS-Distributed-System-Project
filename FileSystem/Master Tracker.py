@@ -5,17 +5,22 @@ from multiprocessing import Process, Manager
 import json
 import random
 import string
+import threading
 
 
-machineIPs = {}
 filesList = {}
 machinesState = {}
+replicaIPs = {}
+downloadUploadIPs = {}
 NUMBER_OF_DOWNLOAD_MIRRORS = 6
 NUMBER_OF_NODES = 4
+NUMBER_OF_PROCESSES = 3
 MY_IP = "192.168.1.12"
 NUMBER_OF_REPLICAS = 2
+TIME_OUT = 60
 
 def clientHandler(id,port):
+    print("Process %s handling client at port %s"%(id,port))
     #Initilize connection
     context = zmq.Context()
     socket = context.socket(zmq.REP)
@@ -26,7 +31,16 @@ def clientHandler(id,port):
         print("Server with id %s, Received %s"%(id,message))
         data = json.loads(message)
         mode = data["mode"]
-        if mode == "download":
+        if mode == "fileslist":
+            username = data["username"]
+            if username in filesList:
+                dataSent = filesList[username].keys()
+                socket.send_json(json.dumps(dataSent))
+            else:
+                #no data found / username not found
+                error = {"error":"no data found"}
+                socket.send_json(json.dumps(error))
+        elif mode == "download":
             username = data["username"]
             filename = data["filename"]    
             if username in filesList:
@@ -36,24 +50,33 @@ def clientHandler(id,port):
                     numberOfChunks = filesList[username][filename]["numberofchunks"]
                     for mirror in filesList[username][filename]["mirrorlist"]:
                         if machinesState[mirror] == True:
-                            mirrorList.extend(machineIPs[mirror])
+                            mirrorList.extend(downloadUploadIPs[mirror])
 
                     #Get random download links
-                    mirrorList = random.sample(mirrorList,NUMBER_OF_DOWNLOAD_MIRRORS)
+                    secure_random = random.SystemRandom()
+                    mirrorList = secure_random.sample(mirrorList,NUMBER_OF_DOWNLOAD_MIRRORS)
                     dataSent = {"numberofchunks": numberOfChunks, "mirrorlist": mirrorList}
                     socket.send_json(json.dumps(dataSent))
                 else:
                     #File not found
-                    pass
+                    error = {"error":"file not found"}
+                    socket.send_json(json.dumps(error))
             else:
                 #Username not found
-                pass
+                error = {"error":"no data found"}
+                socket.send_json(json.dumps(error))
         else: #Upload
             mirrorList = []
             for machine, state in machinesState.items():
                 if state == True:
-                    mirrorList.extend(machineIPs[machine])
-            socket.send_string(random.choice(mirrorList))
+                    mirrorList.extend(downloadUploadIPs[machine])
+            
+            if not mirrorList:
+                error = {"error":"no mirror list found"}
+                socket.send_json(json.dumps(error))
+            else:
+                secure_random = random.SystemRandom()
+                socket.send_string(secure_random.choice(mirrorList))
             
 
 ###############################################################################
@@ -63,9 +86,9 @@ def clientHandler(id,port):
 def aliveSignalReceiver(id,port):
     print("Alive checker process waiting on port %s"%port)
     lastCheck = {}
-    TIME_OUT = 2
     for i in range(NUMBER_OF_NODES):
-        lastCheck[string.ascii_uppercase[i]] = time.time()
+        machine = string.ascii_uppercase[i]
+        lastCheck[machine] = time.time()
 
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
@@ -91,50 +114,123 @@ def aliveSignalReceiver(id,port):
             machine = string.ascii_uppercase[i]
             if machinesState[machine] == True and time.time() - lastCheck[machine] >= TIME_OUT:
                 machinesState[machine] = False
-                print("Machine %s is dead"%string.ascii_uppercase[i])
+                print("Machine %s is dead"%machine)
 
 ###############################################################################
 ###############################################################################
 
 
 def nodeTrackerHandler(id,port):
+    print("Process %s handling replication at port %s"%(id,port))
     #Initilize connection
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://%s:%s" % (MY_IP,port))
 
     while True:
-        message = socket.recv_json()
+        message = json.loads(socket.recv_json())
+        print("I received %s"%message)
         machine = message["machine"]
+        # print(machine)
         username = message["username"]
+        # print(username)
         fileName = message["filename"]
-
+        # print(fileName)
+        numberOfChunks = message["numberofchunks"]
+        # print(numberOfChunks)
         machinesList = []
         for i in range(NUMBER_OF_NODES):
             replica = string.ascii_uppercase[i] 
-            if machineState[replica] == True and replica != machine:
+            if machinesState[replica] == True and replica != machine:
                 machinesList.append(replica)
 
+        if len(machinesList) >= NUMBER_OF_REPLICAS:
+            secure_random = random.SystemRandom()
+            machinesList = secure_random.sample(machinesList,NUMBER_OF_REPLICAS)
+
+        if username not in filesList:
+            filesList[username] = {}
+            
+        temp = filesList[username]
+        temp[fileName] = [machine]
+        temp[fileName].extend(machinesList)
+
+        filesList[username] = temp
+        print(filesList)
+        # filesList[username][fileName].append(machine)
+        # filesList[username][fileName].extend(machinesList)
+
+        ipsList = []
+        for replica in machinesList:
+            ips = replicaIPs[replica]
+            secure_random = random.SystemRandom()
+            ip = secure_random.choice(ips)
+            ipsList.append(ip)
+        print("Sending %s"%json.dumps(ipsList))
+        socket.send_json(json.dumps(ipsList))
+
         
-        filesList[username][fileName] = []
-        filesList[username][fileName].append(machine)
-        filesList[username][fileName].extend(random.sample(machinesList,NUMBER_OF_REPLICAS))
 
 ###############################################################################
 ###############################################################################
 
 
 def server(id,port):
-    print("I'm server with ID = %d, running on port %d"%(id,port))
+    initializeConstants()
     if id == 0:
+        print("I'm alive tracking process at port %s"%port)
         aliveSignalReceiver(id,port)
-    # else:
-    #     clientHandler(id,port)
+    else:
+        # print("I'm process %s handling clients at port %s, replication at port %s"%(id,port,port+1))
+        clientThread = threading.Thread(target=clientHandler, args=(id,port))
+        nodeTrackerThread = threading.Thread(target=nodeTrackerHandler, args=(id,port+1))
+        clientThread.start()
+        nodeTrackerThread.start()
+        clientThread.join()
+        nodeTrackerThread.join()
     
 
 ###############################################################################
 ###############################################################################
 
+
+def initializeConstants():
+    machineIPs = [
+        "192.168.1.6",
+        "192.168.1.6",
+        "192.168.1.6",
+        "192.168.1.6"
+    ]
+
+    replicationPort = 5556
+    downloadUploadPort = 5580
+
+    for i in range(NUMBER_OF_NODES):
+        replica = string.ascii_uppercase[i] 
+        replicaIPs[replica] = []
+        for j in range(NUMBER_OF_PROCESSES):
+            ip = machineIPs[i]
+            port = replicationPort+i*2
+            replicaIPs[replica].append("%s:%s"%(ip,port))
+    
+    print(replicaIPs)
+
+    for i in range(NUMBER_OF_NODES):
+        machine = string.ascii_uppercase[i] 
+        downloadUploadIPs[machine] = []
+        for j in range(NUMBER_OF_PROCESSES):
+            ip = machineIPs[i]
+            port = downloadUploadPort+i*2
+            downloadUploadIPs[machine].append("%s:%s"%(ip,port))
+
+    print(downloadUploadIPs)
+
+    for i in range(NUMBER_OF_NODES):
+        machine = string.ascii_uppercase[i] 
+        machinesState[machine] = False
+
+###############################################################################
+###############################################################################
 
 if __name__ == '__main__':
 
@@ -142,19 +238,13 @@ if __name__ == '__main__':
     manager = Manager()
     machinesState = manager.dict()
     filesList = manager.dict()
-
-    #set default values for machine states
-    for i in range(NUMBER_OF_NODES):
-        machinesState[string.ascii_uppercase[i]] = False
     
     #Initizlize server ports
     startPort = 5555
     if len(sys.argv) > 1:
         startPort = int(sys.argv[1])
 
-
-    serverPorts = range(startPort,startPort+5,1)
-
+    serverPorts = range(startPort,startPort+7,2)
 
     #Create server processes
     id = 0 #each process has unique id
