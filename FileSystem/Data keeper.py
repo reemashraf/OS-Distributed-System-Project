@@ -21,8 +21,8 @@ number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.1.16"
-MACHINE_IP = "192.168.1.22"
-# machine_name = 'Z'
+MACHINE_IP = "192.168.1.17"
+machine_name = 'A'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -40,10 +40,10 @@ def send_alive(): #tested and works fine with the master
         sleep(1)#wait for one second before sending the next alive message
         
         
-def download_uplaod(machine_name , client_server_port):
+def download_uplaod(process_id , client_server_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    print("machine name",machine_name," I took port %s"%client_server_port)
+    print("process_id",process_id," I took port %s"%client_server_port)
     socket.bind("tcp://%s:%s" % (MACHINE_IP,client_server_port))
     print("finished binding")
     while True:
@@ -199,10 +199,10 @@ def replicate_test(file_path , replica_list):
     return replica_list
 
 def run(id , port):
-    machine_name = chr(ord('A') + id)
-    print(machine_name)
+    process_id = id
+    print(process_id)
     t1 = threading.Thread(target=recieve_replica , args=[port])
-    t2 = threading.Thread(target=download_uplaod , args=[ machine_name , port+1])
+    t2 = threading.Thread(target=download_uplaod , args=[process_id , port+1])
     t1.start()
     t2.start()
     t1.join()
