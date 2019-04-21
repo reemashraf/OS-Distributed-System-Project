@@ -1,5 +1,8 @@
-import time
 
+dicto = {
+    "a": "b",
+    "c": "b",
+    "d": "b",
+}
 
-while True:
-    print(time.time())
+print(list(dicto.keys()))
