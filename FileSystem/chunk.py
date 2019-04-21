@@ -4,11 +4,11 @@ import math
 
 ##format filename correctly
 
-def get_chunck_name_by_number(number , file_path):
-    file_name = Path(file_path).stem
+def get_chunck_name_by_number(number ,directory, file_name):
+    #file_name = Path(file_path).stem
     print("file path" , file_path)
     print(file_name)
-    file_size = get_file_size(file_path)
+    file_size = get_file_size(directory+"/"+ file_name)
     number_of_digits = len(str(math.ceil(file_size / CHUNK_SIZE)))
     return  str(number).zfill(number_of_digits) + "_" + str(file_name) + ".chunck"
 
@@ -21,19 +21,20 @@ def get_file_size(filename):
     return size
 
 
-def slice_file(file_path , CHUNK_SIZE):
-    file_size = get_file_size(file_path)
-    file_name = Path(file_path).stem
+def slice_file(directory ,file_name ,CHUNK_SIZE):
+    file_size = get_file_size(directory + "/" + file_name)
+    #file_name = Path(directory).stem
     number_of_chuncks =  math.ceil(file_size / CHUNK_SIZE)
     number_of_digits = len(str(number_of_chuncks))
     file_number = 1
-    file_path_split = file_path.replace(file_name +".mp4" , " ")
-    print(file_path)
+    #directory_split = directory.replace(file_name +".mp4" , "")
+    print(directory)
+    file_path = directory + "/" + file_name
     with open(file_path , 'rb') as f:
         chunk = f.read(CHUNK_SIZE)
         while chunk:
-            print(file_path)
-            with open(file_path_split + str(file_number).zfill(number_of_digits) +"_"+str(file_name) + ".chunck" , 'wb') as chunk_file:
+            # print(directory)
+            with open(directory +"/"+ str(file_number).zfill(number_of_digits) +"_"+str(file_name) + ".chunck" , 'wb') as chunk_file:
                 chunk_file.write(chunk)
             file_number += 1
             chunk = f.read(CHUNK_SIZE)
