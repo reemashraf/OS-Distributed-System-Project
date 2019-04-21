@@ -142,19 +142,24 @@ def recieve_replica(replica_port):
     #parsed_json = json.loads()
     #socket.send_string("AY 7aga") #received the json and ACK is sent
 
-        json = socket.recv_json()#file and json is received
-        parsed_json = json.loads()
+        message = socket.recv_json()#file and json is received
+        parsed_json = json.loads(message)
         z = parsed_json["file"]
         p = zlib.decompress(z)
         sent_file = pickle.loads(p)
         
         #p = zlib.decompress(message)
         #data = pickle.loads(p)
-        directory = "./" + parsed_json["username"]
+        extension_index = len(parsed_json["filename"])
+        if "." in parsed_json["filename"]:
+            extension_index = parsed_json["filename"].rfind(".")
+        directory = "./" + parsed_json["username"] + "/"+str(parsed_json["filename"])[: extension_index]
         if not os.path.exists(directory):
             os.makedirs(directory)
         with open(directory + "/"+ parsed_json["filename"], 'wb') as f:  
-            f.write(sent_file)
+            f.write(data)
+        ####will slice here#### ###done and tested#######
+        number_of_chunks = slice_file(directory ,  parsed_json["filename"] , 64*1024)
         socket.send_string("finished writting file, success")
 
 #for testing purpose only
