@@ -21,6 +21,7 @@ number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.1.16"
+MACHINE_IP = "192.168.1.22"
 # machine_name = 'Z'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
@@ -28,7 +29,7 @@ def send_alive(): #tested and works fine with the master
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     print("before connect")
-    socket.connect("tcp://192.168.1.12:%s" % alive_port)
+    socket.connect("tcp://%s:%s" % (MASTER_IP,alive_port))
     print("alive process connected")
     while True:
         # message = [ 1 , socket.gethostbyname(socket.gethostname()) ]
@@ -43,7 +44,7 @@ def download_uplaod(machine_name , client_server_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     print("machine name",machine_name," I took port %s"%client_server_port)
-    socket.bind("tcp://192.168.1.17:%s" % client_server_port)
+    socket.bind("tcp://%s:%s" % (MACHINE_IP,client_server_port))
     print("finished binding")
     while True:
         message = socket.recv_json()
