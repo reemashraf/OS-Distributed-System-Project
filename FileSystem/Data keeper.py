@@ -12,16 +12,16 @@ import socket as sc
 
 my_ip = sc.gethostbyname(sc.gethostname())
 alive_port = 5555  #port where thre process that sends alive message is sent
-client_server_port = 5580  #port where thre processes that uploads and downloads
+#client_server_port = 5580  #port where thre processes that uploads and downloads
 topic_alive = "alive"
 master_ACK_port = 5560
 process_order = "A"
 replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
-start_port = 5555 
+start_port = 5580 
 MASTER_IP = "192.168.1.16"
-machine_name = 'A'
+# machine_name = 'Z'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -35,14 +35,14 @@ def send_alive(): #tested and works fine with the master
         message = "%s %s"%(topic_alive , process_order)
         # socket.send_string(topic , zmq.SNDMORE)
         socket.send_string(message)
-        print("finished sending alive message")
+        #print("finished sending alive message")
         sleep(1)#wait for one second before sending the next alive message
         
         
-def download_uplaod(client_server_port):
+def download_uplaod(machine_name , client_server_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    print("I took port %s"%client_server_port)
+    print("machine name",machine_name," I took port %s"%client_server_port)
     socket.bind("tcp://192.168.1.17:%s" % client_server_port)
     print("finished binding")
     while True:
@@ -54,7 +54,6 @@ def download_uplaod(client_server_port):
             socket.send_string("ACK")
             print("sent ACK to client")
             message = socket.recv()
-            print(message)
             p = zlib.decompress(message)
             data = pickle.loads(p)
             print("finished recieving")
@@ -89,20 +88,21 @@ def download_uplaod(client_server_port):
             replicate(directory + "/"+ parsed_json["filename"] , replica_list , parsed_json)
         elif(parsed_json["mode"] == "download"):
             print("inside download")
+            print(machine_name)
             chunk_number = parsed_json["chunknumber"]
             extension_index = len(parsed_json["filename"])
             if "." in parsed_json["filename"]:
                 extension_index = parsed_json["filename"].rfind(".")
             directory = "./" + parsed_json["username"] + "/"+str(parsed_json["filename"])[: extension_index]
-            print("directory ", directory)
-            print(os.listdir(directory))
+            #print("directory ", directory)
+            #print(os.listdir(directory))
             filename = get_chunck_name_by_number(chunk_number , directory , parsed_json["filename"])
             file_path = directory + "/" +filename
-            print("file path" , file_path)
+            #print("file path" , file_path)
             with open(file_path , 'rb') as f:
                 chunk_small = f.read(64*1024)
             # chunk_small = f.read()
-            print(file_path)
+            #print(file_path)
             p = pickle.dumps(chunk_small)
             z = zlib.compress(p)
             f.close()
@@ -198,32 +198,31 @@ def replicate_test(file_path , replica_list):
     return replica_list
 
 def run(id , port):
-    my_name = chr(ord('A') + id)
-    print(my_name)
+    machine_name = chr(ord('A') + id)
+    print(machine_name)
     t1 = threading.Thread(target=recieve_replica , args=[port])
-    t2 = threading.Thread(target=download_uplaod , args=[port+1])
+    t2 = threading.Thread(target=download_uplaod , args=[ machine_name , port+1])
     t1.start()
     t2.start()
     t1.join()
     t1.join()
 
 if __name__ == '__main__':
-    # processes_alive = Process(target=send_alive)
-    # ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
-    # processes_list = []
-    # for i in range(NUMBER_OF_PROCESSES):
-    #     processes_list.append(Process(target = run ,args=(i , ports_list[i])))
-    #     # print(processes_list[i + 1])
+    processes_alive = Process(target=send_alive)
+    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
+    processes_list = []
+    for i in range(NUMBER_OF_PROCESSES):
+        processes_list.append(Process(target = run ,args=(i , ports_list[i])))
+        # print(processes_list[i + 1])
 
-    # processes_alive.start()
-    # for process in processes_list:
-    #     process.start()
+    processes_alive.start()
+    for process in processes_list:
+        process.start()
 
+    processes_alive.join()
+    for i in range(NUMBER_OF_PROCESSES):
+        processes_list[i].join()
 
-    # for i in range(NUMBER_OF_PROCESSES):
-    #     processes_list[i].join()
-
-    # processes_alive.join()
     #replica_list = send_ack_master()
     # data = {
     #     "filename" : "vid_1.mp4",
@@ -243,7 +242,7 @@ if __name__ == '__main__':
     # replica_lis = json.loads(replica_lis)
     # print(type(replica_lis))
     # replicate("vid_1.mp4" , replica_lis ,data)
-    download_uplaod(client_server_port)
+    # download_uplaod(client_server_port)
 
 
 
