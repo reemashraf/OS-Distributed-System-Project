@@ -2,8 +2,9 @@ import zmq
 import json
 import pickle
 import zlib
+import os
 
-IP = "tcp://192.168.1.9:5557"
+IP = "tcp://192.168.1.16:5557"
 class Client():
     def __init__(self,username,mode,filename=None,videopath=None):
         self.username = username
@@ -84,18 +85,24 @@ class Client():
             self.socket2.connect("tcp://" + element)
 
         numberofdigits = len(str(numberOfChunks))
-       
-        while (numberOfChunks != 0):
-            print(self.mode)
-            self.data.update({'chunknumber': numberOfChunks})
-            data_json = json.dumps(self.data)
+
+        readData = []
+        directory = "./" + self.data["username"]
+        if not os.path.exists(directory):
+                os.makedirs(directory)
+        for chunkNumber in range(1,numberOfChunks+1):
+            self.data.update({'chunknumber': chunkNumber})
+            dataJson = json.dumps(self.data)
             numberOfChunks = numberOfChunks - 1
-            self.socket2.send_json(data_json)
+            self.socket2.send_json(dataJson)
             videochunk = self.socket2.recv()
             print(videochunk)
             video = zlib.decompress(videochunk)
             video = pickle.loads(video)
-            with open("./" + data_json["username"] + "./" +str(numberOfChunks).zfill(numberofdigits)+ "_" + data_json["filename"], 'wb') as f:
-                f.write(video)
+            readData += video
+        
+
+        with open(directory + "/" + self.data["filename"], 'wb') as f:
+                f.write(bytes(readData))
         ###TODO Git all files m3 b3d and view
         self.socket2.close()
