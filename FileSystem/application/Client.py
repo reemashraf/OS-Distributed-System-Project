@@ -86,11 +86,13 @@ class Client():
         numberofdigits = len(str(numberOfChunks))
        
         while (numberOfChunks != 0):
+            print(self.mode)
             self.data.update({'chunknumber': numberOfChunks})
             data_json = json.dumps(self.data)
             numberOfChunks = numberOfChunks - 1
             self.socket2.send_json(data_json)
             videochunk = self.socket2.recv()
+            print(videochunk)
             video = zlib.decompress(videochunk)
             video = pickle.loads(video)
             with open("./" + data_json["username"] + "./" +str(numberOfChunks).zfill(numberofdigits)+ "_" + data_json["filename"], 'wb') as f:

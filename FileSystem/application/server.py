@@ -34,6 +34,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             for element in files:
                 file += element
                 file += ','
+            
             print("data after conversion")
             print(file)
             json_file = json.dumps(file)
