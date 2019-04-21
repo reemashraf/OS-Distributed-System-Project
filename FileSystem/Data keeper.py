@@ -54,6 +54,7 @@ def download_uplaod(client_server_port):
             socket.send_string("ACK")
             print("sent ACK to client")
             message = socket.recv()
+            print(message)
             p = zlib.decompress(message)
             data = pickle.loads(p)
             print("finished recieving")
