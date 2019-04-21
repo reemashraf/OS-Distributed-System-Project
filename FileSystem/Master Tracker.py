@@ -12,12 +12,12 @@ filesList = {}
 machinesState = {}
 replicaIPs = {}
 downloadUploadIPs = {}
-NUMBER_OF_DOWNLOAD_MIRRORS = 6
+NUMBER_OF_DOWNLOAD_MIRRORS = 1
 NUMBER_OF_NODES = 4
 NUMBER_OF_PROCESSES = 3
-MY_IP = "192.168.1.12"
+MY_IP = "192.168.1.16"
 NUMBER_OF_REPLICAS = 2
-TIME_OUT = 60
+TIME_OUT = 15616516561161615
 
 def clientHandler(id,port):
     print("Process %s handling client at port %s"%(id,port))
@@ -34,8 +34,9 @@ def clientHandler(id,port):
         if mode == "fileslist":
             username = data["username"]
             if username in filesList:
-                dataSent = filesList[username].keys()
+                dataSent = list(filesList[username].keys())
                 socket.send_json(json.dumps(dataSent))
+                print("Server %s sent %s"%(id,dataSent))
             else:
                 #no data found / username not found
                 error = {"error":"no data found"}
@@ -57,6 +58,7 @@ def clientHandler(id,port):
                     mirrorList = secure_random.sample(mirrorList,NUMBER_OF_DOWNLOAD_MIRRORS)
                     dataSent = {"numberofchunks": numberOfChunks, "mirrorlist": mirrorList}
                     socket.send_json(json.dumps(dataSent))
+                    print("Server %s sent %s"%(id,dataSent))
                 else:
                     #File not found
                     error = {"error":"file not found"}
@@ -76,7 +78,9 @@ def clientHandler(id,port):
                 socket.send_json(json.dumps(error))
             else:
                 secure_random = random.SystemRandom()
-                socket.send_string(secure_random.choice(mirrorList))
+                uploadNode = secure_random.choice(mirrorList)
+                socket.send_string(uploadNode)
+                print("Server %s, I redirected client to %s"%(id,uploadNode))
             
 
 ###############################################################################
@@ -129,7 +133,7 @@ def nodeTrackerHandler(id,port):
 
     while True:
         message = json.loads(socket.recv_json())
-        print("I received %s"%message)
+        print("I'm process %s, received %s"%(id,message))
         machine = message["machine"]
         # print(machine)
         username = message["username"]
@@ -152,8 +156,13 @@ def nodeTrackerHandler(id,port):
             filesList[username] = {}
             
         temp = filesList[username]
-        temp[fileName] = [machine]
-        temp[fileName].extend(machinesList)
+        mirrorsList = [machine]
+        mirrorsList.extend(machinesList)
+        temp[fileName] = {
+            "numberofchunks": numberOfChunks,
+            "mirrorlist": mirrorsList    
+        }
+        
 
         filesList[username] = temp
         print(filesList)
@@ -166,7 +175,7 @@ def nodeTrackerHandler(id,port):
             secure_random = random.SystemRandom()
             ip = secure_random.choice(ips)
             ipsList.append(ip)
-        print("Sending %s"%json.dumps(ipsList))
+        print("Sending %s"%ipsList)
         socket.send_json(json.dumps(ipsList))
 
         
@@ -196,38 +205,37 @@ def server(id,port):
 
 def initializeConstants():
     machineIPs = [
-        "192.168.1.6",
-        "192.168.1.6",
-        "192.168.1.6",
-        "192.168.1.6"
+        "192.168.1.17",
+        "192.168.1.17",
+        "192.168.1.17",
+        "192.168.1.17"
     ]
 
-    replicationPort = 5556
+    replicationPort = 5526
     downloadUploadPort = 5580
 
     for i in range(NUMBER_OF_NODES):
-        replica = string.ascii_uppercase[i] 
+        replica = string.ascii_uppercase[i]
         replicaIPs[replica] = []
         for j in range(NUMBER_OF_PROCESSES):
             ip = machineIPs[i]
             port = replicationPort+i*2
             replicaIPs[replica].append("%s:%s"%(ip,port))
-    
-    print(replicaIPs)
+
 
     for i in range(NUMBER_OF_NODES):
         machine = string.ascii_uppercase[i] 
         downloadUploadIPs[machine] = []
         for j in range(NUMBER_OF_PROCESSES):
             ip = machineIPs[i]
-            port = downloadUploadPort+i*2
+            # port = downloadUploadPort+i*2
+            port = downloadUploadPort
             downloadUploadIPs[machine].append("%s:%s"%(ip,port))
 
-    print(downloadUploadIPs)
 
     for i in range(NUMBER_OF_NODES):
         machine = string.ascii_uppercase[i] 
-        machinesState[machine] = False
+        machinesState[machine] = True
 
 ###############################################################################
 ###############################################################################
