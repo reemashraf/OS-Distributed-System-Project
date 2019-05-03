@@ -9,3 +9,8 @@ FileSystem/application/__pycache__/
 FileSystem/vid_1.mp4
 FileSystem/application/vid_1.mp4
 FileSystem/application/vid_2.mp4
+FileSystem/application/css/
+FileSystem/application/fonts/
+FileSystem/application/images/
+FileSystem/application/js/
+FileSystem/application/vendor/
