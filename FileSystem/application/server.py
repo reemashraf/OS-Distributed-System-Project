@@ -21,10 +21,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        html = b"Hello, World!!!"
+        html = b"Hello, World!!!" 
         if self.path == "/":
-            html = getHtml("./signin.html")
+            html = getHtml("./user.html")
             self.wfile.write(html)
+
+        # if self.path == "/":
+        #     html = getHtml("./signin.html")
+        #     self.wfile.write(html)
         elif (self.path == "/signin"):
             html = getHtml("./signin.html")
             self.wfile.write(html)
@@ -57,10 +61,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         if (self.path == "/user"):
             body = body.decode()
-            #body = body.split("&")
-            # self.username = body[0]
-            # self.username = self.username.split("=")[1]
-            self.mode = body  #TODO double check it if body[1] or body only 
+            body = body.split("&")
+            self.username = body[0]
+            self.username = self.username.split("=")[1]
+            self.mode = body[1]  #TODO double check it if body[1] or body only 
             self.mode = self.mode.split("=")[1].lower()
             client.setusername(self.username)   
             client.setmode(self.mode)
