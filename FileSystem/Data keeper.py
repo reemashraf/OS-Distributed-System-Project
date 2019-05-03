@@ -15,14 +15,19 @@ alive_port = 5555  #port where thre process that sends alive message is sent
 #client_server_port = 5580  #port where thre processes that uploads and downloads
 topic_alive = "alive"
 master_ACK_port = 5560
+<<<<<<< HEAD
 notify_replicate_port = 5410
+||||||| merged common ancestors
+process_order = "A"
+=======
+>>>>>>> 8c4711a08d94618da89de30d66cce3659db6b06e
 replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.1.16"
-MACHINE_IP = "192.168.1.17"
-machine_name = 'A'
+MACHINE_IP = "192.168.1.16"
+machine_name = 'C'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master

@@ -23,7 +23,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         html = b"Hello, World!!!"
         if self.path == "/":
-            html = getHtml("./user.html")
+            html = getHtml("./signin.html")
+            self.wfile.write(html)
+        elif (self.path == "/signin"):
+            html = getHtml("./signin.html")
+            self.wfile.write(html)
+        elif (self.path == "/signup"):
+            html = getHtml("./signup.html")
             self.wfile.write(html)
         elif (self.path == "/listfiles"):
             client.setmode("fileslist")
@@ -51,17 +57,46 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         if (self.path == "/user"):
             body = body.decode()
-            body = body.split("&")
-            self.username = body[0]
-            self.username = self.username.split("=")[1]
-            self.mode = body[1]
+            #body = body.split("&")
+            # self.username = body[0]
+            # self.username = self.username.split("=")[1]
+            self.mode = body  #TODO double check it if body[1] or body only 
             self.mode = self.mode.split("=")[1].lower()
-            client.setusername(self.username)
+            client.setusername(self.username)   
             client.setmode(self.mode)
             if (self.mode == "upload"):
                 html = getHtml("./uploadvideo.html")
             else:
                 html = getHtml("./listfiles.html")
+            self.wfile.write(html)
+
+        elif (self.path == "/signin"):
+            body = body.decode()
+            body = body.split("&")
+            self.username = body[0]
+            self.username = self.username.split("=")[1]
+            password = body[1]
+            password =password.split("=")[1]
+            if bool(int(client.login(self.username,password))):
+                html = getHtml("./user.html")
+            else:
+                html = getHtml("./Error2.html")
+            self.wfile.write(html)
+
+        elif (self.path == "/signup"):
+            body = body.decode()
+            body = body.split("&")
+            self.username = body[0]
+            self.username = self.username.split("=")[1]
+            password = body[1]
+            password =password.split("=")[1]
+            print(password)
+            print(self.username)
+            if bool(int(client.signup(self.username,password))):
+                html = getHtml("./user.html")
+            else:
+                #Error Exists
+                html = getHtml("./Error1.html")
             self.wfile.write(html)
 
         elif (self.path == "/videoupload"):

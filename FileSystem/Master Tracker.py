@@ -12,12 +12,12 @@ filesList = {}
 machinesState = {}
 replicaIPs = {}
 downloadUploadIPs = {}
-NUMBER_OF_DOWNLOAD_MIRRORS = 1
-NUMBER_OF_NODES = 4
+NUMBER_OF_DOWNLOAD_MIRRORS = 4
+NUMBER_OF_NODES = 3
 NUMBER_OF_PROCESSES = 3
 MY_IP = "192.168.1.16"
 NUMBER_OF_REPLICAS = 2
-TIME_OUT = 15616516561161615
+TIME_OUT = 3
 
 def clientHandler(id,port):
     print("Process %s handling client at port %s"%(id,port))
@@ -54,8 +54,9 @@ def clientHandler(id,port):
                             mirrorList.extend(downloadUploadIPs[mirror])
 
                     #Get random download links
-                    secure_random = random.SystemRandom()
-                    mirrorList = secure_random.sample(mirrorList,NUMBER_OF_DOWNLOAD_MIRRORS)
+                    if len(mirrorList) > NUMBER_OF_DOWNLOAD_MIRRORS:
+                        secure_random = random.SystemRandom()
+                        mirrorList = secure_random.sample(mirrorList,NUMBER_OF_DOWNLOAD_MIRRORS)
                     dataSent = {"numberofchunks": numberOfChunks, "mirrorlist": mirrorList}
                     socket.send_json(json.dumps(dataSent))
                     print("Server %s sent %s"%(id,dataSent))
@@ -148,7 +149,7 @@ def nodeTrackerHandler(id,port):
             if machinesState[replica] == True and replica != machine:
                 machinesList.append(replica)
 
-        if len(machinesList) >= NUMBER_OF_REPLICAS:
+        if len(machinesList) > NUMBER_OF_REPLICAS:
             secure_random = random.SystemRandom()
             machinesList = secure_random.sample(machinesList,NUMBER_OF_REPLICAS)
 
@@ -206,20 +207,21 @@ def server(id,port):
 def initializeConstants():
     machineIPs = [
         "192.168.1.17",
-        "192.168.1.17",
-        "192.168.1.17",
+        "192.168.1.22",
+        "192.168.1.16",
         "192.168.1.17"
     ]
 
-    replicationPort = 5526
-    downloadUploadPort = 5580
+
+    downloadUploadPort = 5581
+    replicationPort = 5580
 
     for i in range(NUMBER_OF_NODES):
         replica = string.ascii_uppercase[i]
         replicaIPs[replica] = []
         for j in range(NUMBER_OF_PROCESSES):
             ip = machineIPs[i]
-            port = replicationPort+i*2
+            port = replicationPort+j*2
             replicaIPs[replica].append("%s:%s"%(ip,port))
 
 
@@ -228,8 +230,8 @@ def initializeConstants():
         downloadUploadIPs[machine] = []
         for j in range(NUMBER_OF_PROCESSES):
             ip = machineIPs[i]
-            # port = downloadUploadPort+i*2
-            port = downloadUploadPort
+            port = downloadUploadPort+j*2
+            # port = downloadUploadPort
             downloadUploadIPs[machine].append("%s:%s"%(ip,port))
 
 
