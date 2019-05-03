@@ -1,5 +1,7 @@
 import sys
 import zmq
+import json
+from parser import getInsertValues
 import mysql.connector as MySQLdb
 
 
@@ -32,6 +34,7 @@ class Client:
 
     def ack(self):
         message = self.name + "ACK"
+        print("sending ack!!!")
         self.socket.send_multipart([b'server', bytes(message, 'utf-8')])
 
     def main(self):
@@ -46,12 +49,23 @@ class Client:
             elif message == "PING":
                 self.ack()
             elif "INSERT" in message:
-                self.database.cursor().execute(message)
-                # print("")
+                values = getInsertValues(message)
+                print("INSERT VALUES: ", end=" ")
+                print(values)
+                if values:
+                    sqlFormula = "INSERT INTO users (username, password) VALUES (%s, %s)"
+                    try:
+                        self.database.cursor().execute(sqlFormula, values)
+                    except:
+                        print("failed to insert data!!!")
+                    self.database.commit()
             elif "SELECT" in message:
                 cursor = self.database.cursor()
                 cursor.execute(message)
-                print(cursor.fetchall())   ##TODO to be the configuration outtool needs
+                data = cursor.fetchall()   # TODO to be the configuration outtool needs
+                data = json.dumps(data)
+                data = bytes(data, 'utf-8')
+                self.socket.send_multipart([b'server', data])
             else:
                 pass
 
