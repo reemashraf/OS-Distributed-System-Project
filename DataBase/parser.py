@@ -24,6 +24,73 @@ Notes:
 =========================================================================================================================================="""
 
 
+def getShard(username):
+    userkey = username[0].lower()
+    shard = 0
+    for key in shards:
+        shard = shard + 1
+        symbols = key.split("-")
+        if userkey >= symbols[0] and userkey <= symbols[1]:
+            return shard
+    return False
+
+
+def getInsertValues(query):
+        query_arr = query.split()
+        if (query_arr[0] != "INSERT") or (query_arr[1] != "INTO") or (query_arr[2] != "users"):
+            return False
+
+        params = ""
+        for i in range(3, len(query_arr)):
+            if i == len(query_arr)-1:
+                params = params + query_arr[i]
+            else:
+                params = params + query_arr[i] + ' '
+
+        values = params
+        columns = None
+        username = 0
+        password = 1
+        if "VALUES" in params:
+            params = params.split("VALUES")
+            columns = params[0]
+            values = params[1]
+
+            columns = columns.replace(" ", "")
+            columns = columns.replace("(", "")
+            columns = columns.replace(")", "")
+            columns = columns.split(",")
+
+            if "username" not in columns:
+                return False
+            if "password" not in columns:
+                return False
+
+            for i in range(len(columns)):
+                if columns[i] == "username":
+                    username = i
+                if columns[i] == "password":
+                    password = i
+
+        values = values.replace(" ", "")
+        values = values.replace("(", "")
+        values = values.replace(")", "")
+        values = values.split(",")
+
+        for value in values:
+            if value[0] != "'" or value[len(value)-1] != "'":
+                return False
+
+        temp = []
+        for value in values:
+            temp.append(value.replace("'", ""))
+        values = temp
+        auth_params = []
+        auth_params.append(values[username])
+        auth_params.append(values[password])
+        return tuple(auth_params)
+
+
 class Parser:
     def __init__(self):
         pass
