@@ -86,7 +86,7 @@ if __name__ == "__main__":
     context = zmq.Context()
     socket = context.socket(zmq.DEALER)
     socket.setsockopt(zmq.IDENTITY, bytes(name, 'utf-8'))
-    socket.connect("tcp://localhost:%s" % port)
+    socket.connect("tcp://192.168.43.113:%s" % port)
 
     client = Client(name, database_ip, database_port, database_name, socket)
     print("Client was created successfully waiting for server commands")
