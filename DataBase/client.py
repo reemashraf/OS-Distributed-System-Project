@@ -6,10 +6,11 @@ import mysql.connector as MySQLdb
 
 
 class Client:
-    def __init__(self, name, database_ip, database_port, socket):
+    def __init__(self, name, database_ip, database_port, database_name, socket):
         self.name = name
         self.database_ip = database_ip
         self.database_port = database_port
+        self.database_name = database_name
         self.database = self.setDatabase()
         self.socket = socket
 
@@ -18,8 +19,8 @@ class Client:
             host=self.database_ip,
             port=self.database_port,
             user="root",
-            passwd="root",
-            db="test"
+            passwd="",
+            db=self.database_name
         )
 
     def setSocket(self, socket):
@@ -70,23 +71,24 @@ class Client:
                 pass
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Error: missing arguments -> ClientName, DataBaseIP and DataBasePort!!!")
+    if len(sys.argv) < 5:
+        print("Error: missing arguments -> ClientName, DataBaseIP, DataBasePort and DataBaseName!!!")
         exit(1)
     name = sys.argv[1]
     database_ip = sys.argv[2]
     database_port = sys.argv[3]
+    database_name = sys.argv[4]
 
     port = "5556"
     if len(sys.argv) > 5:
-        port = sys.argv[4]
+        port = sys.argv[5]
 
     context = zmq.Context()
     socket = context.socket(zmq.DEALER)
     socket.setsockopt(zmq.IDENTITY, bytes(name, 'utf-8'))
     socket.connect("tcp://localhost:%s" % port)
 
-    client = Client(name, database_ip, database_port, socket)
+    client = Client(name, database_ip, database_port, database_name, socket)
     print("Client was created successfully waiting for server commands")
     print("to turn client off press CTRL+C")
 

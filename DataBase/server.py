@@ -108,13 +108,17 @@ class Server:
         if shard:
             query = "SELECT password FROM users WHERE username='" + username + "'"
             data = self.select(shard, query)
-            data = data[0]
-            user_password = data[0]
-            if password == user_password:
-                print("user is logged in!!!")
-                return True
+            if data:
+                data = data[0]
+                user_password = data[0]
+                if password == user_password:
+                    print("user is logged in!!!")
+                    return True
+                else:
+                    print("user is not logged in!!!")
+                    return False
             else:
-                print("user is not logged in!!!")
+                print("user doesn't exist!!!")
                 return False
         return False
 
@@ -195,6 +199,7 @@ class Server:
 
 
 def http(socket, server):
+    result = "0"
     while True:
         # Wait for next request from client
         message = socket.recv_json()
@@ -204,13 +209,20 @@ def http(socket, server):
         if ("username" in keys) and ("password" in keys) and ("mode" in keys):
             mode = message['mode'].lower()
             if (mode == "signin"):
-                socket.send_string(str(server.signin(message["username"], message["password"])))
+                if server.signin(message["username"], message["password"]):
+                    result = "1"
+                else:
+                    result = "0"
             elif (mode == "signup"):
-                socket.send_string(str(server.signup(message["username"], message["password"])))
+                if server.signup(message["username"], message["password"]):
+                    result = "1"
+                else:
+                    result = "0"
             else:
-                socket.send_string(str(False))
+                result = "0"
         else:
-            socket.send_string(str(False))
+            result = "0"
+        socket.send_string(result)
 
 
 def cli(server):
