@@ -1,0 +1,11 @@
+.vscode/
+DataBase/.vscode/
+FileSystem/.vscode/
+FileSystem/application/.vscode/
+__pycache__/
+DataBase/__pycache__/
+FileSystem/__pycache__/
+FileSystem/application/__pycache__/
+FileSystem/vid_1.mp4
+FileSystem/application/vid_1.mp4
+FileSystem/application/vid_2.mp4

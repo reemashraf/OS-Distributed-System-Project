@@ -20,8 +20,8 @@ number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.1.16"
-MACHINE_IP = "192.168.1.22"
-machine_name = 'B'
+MACHINE_IP = "192.168.1.16"
+machine_name = 'C'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -158,7 +158,7 @@ def recieve_replica(replica_port):
             os.makedirs(directory)
         with open(directory + "/"+ parsed_json["filename"], 'wb') as f:  
             f.write(sent_file)
-        ####will slice here#### ###done and tested#######
+        ####will slice here########done and tested#######
         number_of_chunks = slice_file(directory ,  parsed_json["filename"] , 64*1024)
         socket.send_string("finished writting file, success")
 

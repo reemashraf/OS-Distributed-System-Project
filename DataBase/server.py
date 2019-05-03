@@ -1,9 +1,10 @@
 import zmq
 import sys
 import time
+import json
 import random
 import threading
-from parser import Parser
+from parser import Parser, getShard
 
 SHARDS = {
     0: {"available": True, "master": 0, "machines": ["sh1m", "sh1r1", "sh1r2"]},
@@ -52,6 +53,15 @@ def setMaster(shard_index, new_master_index):
     return False
 
 
+def getActiveRelicas(shard_index):
+    shard = SHARDS[shard_index]
+    master = shard["master"]
+    machines = shard["machines"]
+    if master < len(machines)-1:
+        return machines[master+1:]
+    return False
+
+
 def getNextReplica(shard_index):
     shard = SHARDS[shard_index]
     master = shard["master"]
@@ -83,7 +93,6 @@ class Server:
     def ping(self, machine):
         ack_received = False
         self.socket.send_multipart([bytes(machine, 'utf-8'), b'PING'])
-
         socks = dict(self.poller.poll(TIME_OUT))
         if socket in socks and socks[self.socket] == zmq.POLLIN:
             message = self.socket.recv_multipart()
@@ -94,6 +103,41 @@ class Server:
 
         return ack_received
 
+    def signin(self, username, password):
+        shard = getShard(username)
+        if shard:
+            query = "SELECT password FROM users WHERE username='" + username + "'"
+            data = self.select(shard, query)
+            data = data[0]
+            user_password = data[0]
+            if password == user_password:
+                print("user is logged in!!!")
+                return True
+            else:
+                print("user is not logged in!!!")
+                return False
+        return False
+
+    def signup(self, username, password):
+        shard = getShard(username)
+        if shard:
+            query = "INSERT INTO users (username, password) VALUES ('" + username + "'" + ", '" + password + "')"
+            self.insert(shard, query)
+            return True
+        return False
+
+    def insertInReplicas(self, shard, query):
+        replicas = getActiveRelicas(shard)
+        for replica in replicas:
+            print(replica)
+            threading.Thread(target=self.insertInReplica, args=(replica, query,)).start()
+
+    def insertInReplica(self, machine, query):
+        if self.ping(machine):
+            self.run(machine, query)
+        else:
+            print("replica: %s is dead" % machine)
+
     def insert(self, shard, query):
         shard = shard - 1
         machine = getMaster(shard)
@@ -101,6 +145,8 @@ class Server:
             if self.ping(machine):
                 if setMaster(shard, getMachineIndex(shard, machine)):
                     self.run(machine, query)
+                    self.insertInReplicas(shard, query)
+
                     break
                 else:
                     machine = getNextReplica(shard)
@@ -116,7 +162,9 @@ class Server:
         while machine:
             if self.ping(machine):
                 if setMaster(shard, getMachineIndex(shard, machine)):
-                    self.run(machine, query)
+                    data = self.run(machine, query, select=True)
+                    print(data)
+                    return data
                     break
                 else:
                     machine = getNextReplica(shard)
@@ -125,26 +173,47 @@ class Server:
         if not machine:
             print("WARNING: shard %d is not responding and will be droped!!!" % (shard+1))
             dropShard(shard)
+            return False
+        return True
 
-    def run(self, machine, query):
+    def run(self, machine, query, select=False):
         self.socket.send_multipart([bytes(machine, 'utf-8'), bytes(query, 'utf-8')])
+        if select:
+            socks = dict(self.poller.poll(TIME_OUT))
+            if socket in socks and socks[self.socket] == zmq.POLLIN:
+                message = self.socket.recv_multipart()
+                receiver = message[1].decode()
+                if receiver == "server":
+                    message = message[2]
+                    message = json.loads(message)
+                    return message
+                else:
+                    print("no response received!!!")
+            else:
+                print("no response received!!!")
+        return True
 
 
-server = Server()
+def http(socket, server):
+    while True:
+        # Wait for next request from client
+        message = socket.recv_json()
+        print("Received request: ", message)
+        time.sleep(1)
+        keys = message.keys()
+        if ("username" in keys) and ("password" in keys) and ("mode" in keys):
+            mode = message['mode'].lower()
+            if (mode == "signin"):
+                socket.send_string(str(server.signin(message["username"], message["password"])))
+            elif (mode == "signup"):
+                socket.send_string(str(server.signup(message["username"], message["password"])))
+            else:
+                socket.send_string(str(False))
+        else:
+            socket.send_string(str(False))
 
-if __name__ == "__main__":
-    port = "5556"
-    if len(sys.argv) > 1:
-        port = sys.argv[1]
 
-    context = zmq.Context()
-    socket = context.socket(zmq.ROUTER)
-    socket.setsockopt(zmq.IDENTITY, b'server')
-    socket.bind("tcp://*:%s" % port)
-
-    server.setSocket(socket)
-    print("server was created successfully ready to receive client requests")
-
+def cli(server):
     parser = Parser()
     print(DOC)
     while True:
@@ -168,3 +237,27 @@ if __name__ == "__main__":
                 print("Error: invalid instruction!!!")
         else:
             print("Error: Invalid Instruction!!!")
+
+
+if __name__ == "__main__":
+    port = "5556"
+    http_port = "3000"
+    if len(sys.argv) > 1:
+        port = sys.argv[1]
+    if len(sys.argv) > 2:
+        http_port = sys.argv[2]
+
+    context = zmq.Context()
+    socket = context.socket(zmq.ROUTER)
+    socket.setsockopt(zmq.IDENTITY, b'server')
+    socket.bind("tcp://*:%s" % port)
+    http_socket = context.socket(zmq.REP)
+    http_socket.bind("tcp://*:%s" % http_port)
+
+    server = Server()
+    server.setSocket(socket)
+    print("server was created successfully ready to receive client requests")
+
+    http(http_socket, server)
+    # threading.Thread(target=cli, args=(server,)).start()
+    # threading.Thread(target=http, args=(http_socket, server,)).start()
