@@ -25,10 +25,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/":
             html = getHtml("./signin.html")
             self.wfile.write(html)
-        # elif self.path == "/":
-        #     html = getHtml("./user.html")
-        #    self.wfile.write(html)
-    
+        elif (self.path == "/signin"):
+            html = getHtml("./signin.html")
+            self.wfile.write(html)
+        elif (self.path == "/signup"):
+            html = getHtml("./signup.html")
+            self.wfile.write(html)
         elif (self.path == "/listfiles"):
             client.setmode("fileslist")
             files = client.run()
@@ -55,12 +57,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         if (self.path == "/user"):
             body = body.decode()
-            body = body.split("&")
-            self.username = body[0]
-            self.username = self.username.split("=")[1]
-            self.mode = body[1]
+            #body = body.split("&")
+            # self.username = body[0]
+            # self.username = self.username.split("=")[1]
+            self.mode = body  #TODO double check it if body[1] or body only 
             self.mode = self.mode.split("=")[1].lower()
-            client.setusername(self.username)
+            client.setusername(self.username)   
             client.setmode(self.mode)
             if (self.mode == "upload"):
                 html = getHtml("./uploadvideo.html")
@@ -71,11 +73,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         elif (self.path == "/signin"):
             body = body.decode()
             body = body.split("&")
-            username = body[0]
-            username =username.split("=")[1]
+            self.username = body[0]
+            self.username = self.username.split("=")[1]
             password = body[1]
             password =password.split("=")[1]
-            if (client.login(username,password)) == "True":
+            if bool(int(client.login(self.username,password))):
                 html = getHtml("./user.html")
             else:
                 html = getHtml("./Error2.html")
@@ -84,13 +86,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         elif (self.path == "/signup"):
             body = body.decode()
             body = body.split("&")
-            username = body[0]
-            username =username.split("=")[1]
+            self.username = body[0]
+            self.username = self.username.split("=")[1]
             password = body[1]
             password =password.split("=")[1]
             print(password)
-            print(username)
-            if (client.signup(username,password)) == "True":
+            print(self.username)
+            if bool(int(client.signup(self.username,password))):
                 html = getHtml("./user.html")
             else:
                 #Error Exists

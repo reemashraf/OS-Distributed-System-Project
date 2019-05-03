@@ -6,7 +6,7 @@ import os
 import zmq.ssh
 
 IP = "tcp://192.168.1.16:5557"
-DATABASEIP = "tcp://41.235.181.134:3000"
+DATABASEIP = "tcp://database@server.os:3000"
 class Client():
     def __init__(self,username,mode,filename=None,videopath=None):
         self.username = username
@@ -39,29 +39,33 @@ class Client():
     def login(self,name,password):
         self.databaseSocket = zmq.Context().socket(zmq.REQ)
         
-        zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
-        # self.databaseSocket.connect(DATABASEIP)
+       # zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
+        self.databaseSocket.connect("tcp://10.5.50.212:3000")
         self.data = {"mode": "signin",
         "username":name,
         "password":password }
-        data_json = json.dumps(self.data)
-        self.databaseSocket.send_json(data_json)
+        #data_json = json.dumps(self.data)
+        self.databaseSocket.send_json(self.data)
         signin = self.databaseSocket.recv_string()
+        print(signin)
+        print("ana 5rga")
         self.databaseSocket.close()
         return signin
 
     def signup(self,name,password):
         self.databaseSocket = zmq.Context().socket(zmq.REQ)
         
-        zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
-        # self.databaseSocket.connect(DATABASEIP)
+        #zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
+        self.databaseSocket.connect("tcp://10.5.50.212:3000")
         self.data = {"mode": "signup",
         "username":name,
         "password":password }
-        data_json = json.dumps(self.data)
-        self.databaseSocket.send_json(data_json)
+        #data_json = json.dumps(self.data)
+        self.databaseSocket.send_json(self.data)
         signup = self.databaseSocket.recv_string()
         self.databaseSocket.close()
+        print(signup)
+        print("ana 5rga")
         return signup
 
     def upload(self):
