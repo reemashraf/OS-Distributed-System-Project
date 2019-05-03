@@ -15,6 +15,8 @@ alive_port = 5555  #port where thre process that sends alive message is sent
 #client_server_port = 5580  #port where thre processes that uploads and downloads
 topic_alive = "alive"
 master_ACK_port = 5560
+notify_replicate_port = 5410
+process_order = "A"
 replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
@@ -35,7 +37,7 @@ def send_alive(): #tested and works fine with the master
         message = "%s %s"%(topic_alive , machine_name)
         # socket.send_string(topic , zmq.SNDMORE)
         socket.send_string(message)
-        #print("finished sending alive message")
+        print("finished sending alive message")
         sleep(1)#wait for one second before sending the next alive message
         
         
@@ -43,7 +45,7 @@ def download_uplaod(process_id , client_server_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     print("process_id",process_id," I took port %s"%client_server_port)
-    socket.bind("tcp://%s:%s" % (MACHINE_IP,client_server_port))
+    socket.bind("tcp://*:%s" %client_server_port)
     print("finished binding")
     while True:
         message = socket.recv_json()
@@ -79,13 +81,14 @@ def download_uplaod(process_id , client_server_port):
                 }
             header_data_sent_to_master = json.dumps(header_data)
             socket_master_ack.send_json(header_data_sent_to_master)
-            replica_list_json = socket_master_ack.recv_json()
-            replica_list = json.loads(replica_list_json)
+            ackAfterUpload = socket_master_ack.recv_string()
+            # replica_list_json = socket_master_ack.recv_json()
+            # replica_list = json.loads(replica_list_json)
             #####TO_do replicate to other machines#######
             '''
             will send file path(comelete file path) from the client, and replica list, parsed json
             '''
-            replicate(directory + "/"+ parsed_json["filename"] , replica_list , parsed_json)
+           # replicate(directory + "/"+ parsed_json["filename"] , replica_list , parsed_json)
         elif(parsed_json["mode"] == "download"):
             print("inside download")
             print(machine_name)
@@ -108,9 +111,19 @@ def download_uplaod(process_id , client_server_port):
             f.close()
             socket.send(z)
             
-def replicate(file_path , replica_list , parsed_json):
+            
+def replicate():
+    context = zmq.Context() #connection with the master to get info(here is the server)
+    socket_master_replicate = context.socket(zmq.REP)
+    socket_master_replicate.bind("tcp://*:%s" % notify_replicate_port)
+
+    parsed_json = json.loads(socket_master_replicate.recv_json())
+    replica_list = parsed_json["replicalist"]
+
+    socket_master_replicate.send_string("ACK, replication info recieved")
+    socket_master_replicate.close()
     #here other nodes act as servers the one responsible for sending is the client
-    context = zmq.Context()
+    #connection with data nodes
     print ("Connecting to server (replica dataNodes)...")
     socket = context.socket(zmq.REQ)
 
@@ -118,6 +131,12 @@ def replicate(file_path , replica_list , parsed_json):
     for replica_address in replica_list:
         print(replica_address)
         socket.connect ("tcp://%s" %replica_address)
+    
+    extension_index = len(parsed_json["filename"])
+    if "." in parsed_json["filename"]:
+        extension_index = parsed_json["filename"].rfind(".")
+    directory = "./" + parsed_json["username"] + "/"+str(parsed_json["filename"])[: extension_index]
+    file_path = directory + "/"+ parsed_json["filename"]
     
     f = open(file_path , 'rb')
     p = pickle.dumps(f.read())
@@ -129,7 +148,7 @@ def replicate(file_path , replica_list , parsed_json):
         socket.send(pickle.dumps(parsed_json))
         ACK = socket.recv_string()
         print("ack after sending json header" , ACK)
- 
+    socket.close()
 
 def recieve_replica(replica_port):
     context = zmq.Context()
@@ -162,7 +181,7 @@ def recieve_replica(replica_port):
         number_of_chunks = slice_file(directory ,  parsed_json["filename"] , 64*1024)
         socket.send_string("finished writting file, success")
 
-#for testing purpose only
+#for testing purposes only
 def send_ack_master():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
@@ -213,13 +232,20 @@ def run(id , port):
     t1.join()
     t1.join()
 
+def run_alive():
+    t1 = threading.Thread(target=send_alive)
+    t2 = threading.Thread(target=replicate)
+    t1.start()
+    t2.start()
+    t1.join()
+    t1.join()
+
 if __name__ == '__main__':
-    processes_alive = Process(target=send_alive)
-    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
+    processes_alive = Process(target=run_alive)
+    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 3)
     processes_list = []
     for i in range(NUMBER_OF_PROCESSES):
         processes_list.append(Process(target = run ,args=(i , ports_list[i])))
-        # print(processes_list[i + 1])
 
     processes_alive.start()
     for process in processes_list:
