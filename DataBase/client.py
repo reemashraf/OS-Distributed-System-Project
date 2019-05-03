@@ -1,7 +1,7 @@
 import sys
 import zmq
 import json
-from parser import getInsertValues
+from parser import*
 import mysql.connector as MySQLdb
 
 

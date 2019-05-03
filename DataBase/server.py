@@ -4,7 +4,7 @@ import time
 import json
 import random
 import threading
-from parser import Parser, getShard
+from parser import*
 
 SHARDS = {
     0: {"available": True, "master": 0, "machines": ["sh1m", "sh1r1", "sh1r2"]},
