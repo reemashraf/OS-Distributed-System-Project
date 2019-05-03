@@ -15,14 +15,13 @@ alive_port = 5555  #port where thre process that sends alive message is sent
 #client_server_port = 5580  #port where thre processes that uploads and downloads
 topic_alive = "alive"
 master_ACK_port = 5560
-process_order = "A"
 replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.1.16"
-MACHINE_IP = "192.168.1.17"
-machine_name = 'A'
+MACHINE_IP = "192.168.1.22"
+machine_name = 'B'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -33,7 +32,7 @@ def send_alive(): #tested and works fine with the master
     print("alive process connected")
     while True:
         # message = [ 1 , socket.gethostbyname(socket.gethostname()) ]
-        message = "%s %s"%(topic_alive , process_order)
+        message = "%s %s"%(topic_alive , machine_name)
         # socket.send_string(topic , zmq.SNDMORE)
         socket.send_string(message)
         #print("finished sending alive message")
@@ -142,8 +141,9 @@ def recieve_replica(replica_port):
     #parsed_json = json.loads()
     #socket.send_string("AY 7aga") #received the json and ACK is sent
 
-        message = socket.recv_json()#file and json is received
-        parsed_json = json.loads(message)
+        message = socket.recv()#file and json is received
+        message = pickle.loads(message)
+        parsed_json = message
         z = parsed_json["file"]
         p = zlib.decompress(z)
         sent_file = pickle.loads(p)

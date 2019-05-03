@@ -23,8 +23,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         html = b"Hello, World!!!"
         if self.path == "/":
-            html = getHtml("./user.html")
+            html = getHtml("./signin.html")
             self.wfile.write(html)
+        # elif self.path == "/":
+        #     html = getHtml("./user.html")
+        #    self.wfile.write(html)
+    
         elif (self.path == "/listfiles"):
             client.setmode("fileslist")
             files = client.run()
@@ -62,6 +66,35 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 html = getHtml("./uploadvideo.html")
             else:
                 html = getHtml("./listfiles.html")
+            self.wfile.write(html)
+
+        elif (self.path == "/signin"):
+            body = body.decode()
+            body = body.split("&")
+            username = body[0]
+            username =username.split("=")[1]
+            password = body[1]
+            password =password.split("=")[1]
+            if (client.login(username,password)) == "True":
+                html = getHtml("./user.html")
+            else:
+                html = getHtml("./Error2.html")
+            self.wfile.write(html)
+
+        elif (self.path == "/signup"):
+            body = body.decode()
+            body = body.split("&")
+            username = body[0]
+            username =username.split("=")[1]
+            password = body[1]
+            password =password.split("=")[1]
+            print(password)
+            print(username)
+            if (client.signup(username,password)) == "True":
+                html = getHtml("./user.html")
+            else:
+                #Error Exists
+                html = getHtml("./Error1.html")
             self.wfile.write(html)
 
         elif (self.path == "/videoupload"):
