@@ -158,7 +158,7 @@ def recieve_replica(replica_port):
             os.makedirs(directory)
         with open(directory + "/"+ parsed_json["filename"], 'wb') as f:  
             f.write(sent_file)
-        ####will slice here#### ###done and tested#######
+        ####will slice here########done and tested#######
         number_of_chunks = slice_file(directory ,  parsed_json["filename"] , 64*1024)
         socket.send_string("finished writting file, success")
 
