@@ -12,15 +12,15 @@ machinesState = {}
 replicaIPs = {}
 notifyReplicaIPs = {}
 downloadUploadIPs = {}
-NUMBER_OF_DOWNLOAD_MIRRORS = 4
-NUMBER_OF_NODES = 3
+NUMBER_OF_DOWNLOAD_MIRRORS = 1
+NUMBER_OF_NODES = 2
 NUMBER_OF_PROCESSES = 3
 MIN_NUMBER_OF_COPYS = 3
-MY_IP = "10.5.50.123"
-NOTIFY_REPLICA_PORT = "5680"
+MY_IP = "192.168.1.17"
+NOTIFY_REPLICA_PORT = "5410"
 NUMBER_OF_REPLICAS = 2
 TIME_OUT = 3
-REPLICATE_CHECK_TIME = 60
+REPLICATE_CHECK_TIME = 15
 INSERT_QUERY = "INSERT INTO files(USERNAME,FILENAME,NUMBEROFCHUNKS,MIRROR) VALUES(?,?,?,?)"
 MIRROR_LIST_QUERY = "SELECT NUMBEROFCHUNKS,MIRROR from files where USERNAME = ? AND FILENAME = ?"
 FILES_LIST_QUERY = "SELECT DISTINCT FILENAME FROM files WHERE USERNAME = ?"
@@ -177,16 +177,16 @@ def replicate(id,port):
     c = conn.cursor()
     
 
-    time.sleep(5)
+    time.sleep(30)
     while(True):
         print("Starting checking files for replication")
         filesNeedsReplication = []
         for row in c.execute(FILES_NEEDS_REPLICATION):
-            print("File needs replication %s for user %s",row[0],row[1])
+            print("File (%s) needs replication for user (%s)"%(row[1],row[0]))
             filesNeedsReplication.append(row)
         
         for row1 in filesNeedsReplication:
-            print("?")
+            print("Handling",row1)
             mirrorList = []
             numberOfChunks = 0
             username = row1[0]
@@ -206,11 +206,12 @@ def replicate(id,port):
             for i in range(NUMBER_OF_NODES):
                 replica = string.ascii_uppercase[i]
                 if (machinesState[replica] == True and replica not in mirrorList):
-                    machinesList.append(replicaIPs[replica])
+                    secure_random = random.SystemRandom()
+                    machinesList.append(secure_random.choice(replicaIPs[replica]))
                     replicaNames.append(replica)
 
             if len(machinesList) == 0: #No machine is alive to replicate, na7s
-                print("Ana na7s")
+                print("No alive machine to replicate to")
                 continue
             
             sourceMachine = None
@@ -221,27 +222,38 @@ def replicate(id,port):
                     break
             
             if sourceMachine is None: #No source machine is alive to replicate, na7s bardo
-                print("Ana na7s")
+                print("No alive source machine")
                 continue 
+
+            if len(machinesList) > needed:
+                secure_random = random.SystemRandom()
+                machinesList = secure_random.sample(machinesList,needed)
 
             dataSent = {"filename": filename,
                         "username": username,
                         "replicalist": machinesList}
 
+            print("Replicating file (%s) for user (%s)"%(filename,username))
+            print("Source machine: %s with ip %s"%(sourceMachine,notifyReplicaIPs[sourceMachine]))
+            print("Replicating to",machinesList)
+            
 
-            for machine in replicaNames:
-                t = (username,filename,numberOfChunks,machine)
-                c.execute(INSERT_QUERY,t)
-                conn.commit()
+            
             
             
             context = zmq.Context()
-            socket = context.socket(zmq.REP)
+            socket = context.socket(zmq.REQ)
             socket.connect("tcp://%s" % (notifyReplicaIPs[sourceMachine]))
             socket.send_json(json.dumps(dataSent))
             socket.recv_string()
 
             socket.close()
+            
+            #Notify database
+            for machine in replicaNames:
+                t = (username,filename,numberOfChunks,machine)
+                c.execute(INSERT_QUERY,t)
+                conn.commit()
 
         time.sleep(REPLICATE_CHECK_TIME)
 
@@ -276,9 +288,9 @@ def server(id,port):
 def initializeConstants():
     machineIPs = [
         "192.168.1.17",
-        "192.168.1.22",
-        "192.168.1.16",
-        "192.168.1.17"
+        "192.168.1.8",
+        "192.168.43.53",
+        "192.168.43.53"
     ]
 
 

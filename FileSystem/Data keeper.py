@@ -21,9 +21,9 @@ replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
-MASTER_IP = "192.168.43.87"
-MACHINE_IP = "192.168.43.53"
-machine_name = 'C'
+MASTER_IP = "192.168.1.17"
+MACHINE_IP = "192.168.1.17"
+machine_name = 'A'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -37,7 +37,7 @@ def send_alive(): #tested and works fine with the master
         message = "%s %s"%(topic_alive , machine_name)
         # socket.send_string(topic , zmq.SNDMORE)
         socket.send_string(message)
-        print("finished sending alive message")
+        # print("finished sending alive message")
         sleep(1)#wait for one second before sending the next alive message
         
         
@@ -161,6 +161,7 @@ def recieve_replica(replica_port):
     #socket.send_string("AY 7aga") #received the json and ACK is sent
 
         message = socket.recv()#file and json is received
+        print("I received replication request")
         message = pickle.loads(message)
         parsed_json = message
         z = parsed_json["file"]
@@ -242,7 +243,7 @@ def run_alive():
 
 if __name__ == '__main__':
     processes_alive = Process(target=run_alive)
-    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 3)
+    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
     processes_list = []
     for i in range(NUMBER_OF_PROCESSES):
         processes_list.append(Process(target = run ,args=(i , ports_list[i])))
