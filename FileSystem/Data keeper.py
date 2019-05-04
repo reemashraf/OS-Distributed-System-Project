@@ -126,10 +126,11 @@ def replicate():
     #connection with data nodes
     print ("Connecting to server (replica dataNodes)...")
     socket = context.socket(zmq.REQ)
-
+    print(replica_list)
     #list_values = [ replica_address for replica_address in replica_list.values()]
     for replica_address in replica_list:
         print(replica_address)
+        print( "type is", type(replica_address))
         socket.connect ("tcp://%s" %replica_address)
     
     extension_index = len(parsed_json["filename"])
