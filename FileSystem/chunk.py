@@ -3,10 +3,10 @@ import os
 import math
 
 ##format filename correctly
-
+CHUNK_SIZE = 64*1024
 def get_chunck_name_by_number(number ,directory, file_name):
     #file_name = Path(file_path).stem
-    print("file path" , file_path)
+    # print("file path" , file_path)
     print(file_name)
     file_size = get_file_size(directory+"/"+ file_name)
     number_of_digits = len(str(math.ceil(file_size / CHUNK_SIZE)))
@@ -57,11 +57,11 @@ def deslice_file(file_path):
     f = open( directory + "/"+final , 'wb')
     f.write(read_data)
     
-file_size = (get_file_size("vid_1.mp4"))
-print(file_size)
-CHUNK_SIZE = 64*1024
-number_of_chuncks = math.ceil(file_size / CHUNK_SIZE)
-file_path = Path( "./"+ "vid_2.mp4" )
+# file_size = (get_file_size("vid_1.mp4"))
+# print(file_size)
+# CHUNK_SIZE = 64*1024
+# number_of_chuncks = math.ceil(file_size / CHUNK_SIZE)
+# file_path = Path( "./"+ "vid_2.mp4" )
 # print(number_of_chuncks)
 #slice_file("./reem/vid_1.mp4" , 64*1024 )
 # deslice_file()

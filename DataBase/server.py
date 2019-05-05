@@ -33,6 +33,15 @@ Notes:
 3- optional feilds may lead to instructions not being excuted properly or not excuted at all which it totally your responsibility XD
 =========================================================================================================================================="""
 
+def getShard(username):
+    userkey = username[0].lower()
+    shard = 0
+    for key in shards:
+        shard = shard + 1
+        symbols = key.split("-")
+        if userkey >= symbols[0] and userkey <= symbols[1]:
+            return shard
+    return False
 
 def getShard(username):
     userkey = username[0].lower()
