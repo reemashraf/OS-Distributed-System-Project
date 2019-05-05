@@ -162,6 +162,7 @@ def recieve_replica(replica_port):
     #socket.send_string("AY 7aga") #received the json and ACK is sent
 
         message = socket.recv()#file and json is received
+        print("I received replication request")
         message = pickle.loads(message)
         parsed_json = message
         z = parsed_json["file"]
