@@ -4,9 +4,8 @@ import time
 import json
 import random
 import threading
-# from parser import *
 
-shards = [
+shardsNames = [
     "a-g",
     "h-m",
     "n-t",
@@ -38,6 +37,16 @@ def getShard(username):
     userkey = username[0].lower()
     shard = 0
     for key in shards:
+        shard = shard + 1
+        symbols = key.split("-")
+        if userkey >= symbols[0] and userkey <= symbols[1]:
+            return shard
+    return False
+
+def getShard(username):
+    userkey = username[0].lower()
+    shard = 0
+    for key in shardsNames:
         shard = shard + 1
         symbols = key.split("-")
         if userkey >= symbols[0] and userkey <= symbols[1]:
@@ -278,9 +287,9 @@ if __name__ == "__main__":
     context = zmq.Context()
     socket = context.socket(zmq.ROUTER)
     socket.setsockopt(zmq.IDENTITY, b'server')
-    socket.bind("tcp://*:%s" % port)
+    socket.bind("tcp://192.168.1.13:%s" % port)
     http_socket = context.socket(zmq.REP)
-    http_socket.bind("tcp://*:%s" % http_port)
+    http_socket.bind("tcp://192.168.1.13:%s" % http_port)
 
     server = Server()
     server.setSocket(socket)
