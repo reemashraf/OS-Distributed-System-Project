@@ -1,0 +1,3 @@
+ python client.py sh3m localhost 3306 osdb1
+ python client.py sh2r1 localhost 3306 osdb2
+ python client.py sh1r2 localhost 3306 osdb3
