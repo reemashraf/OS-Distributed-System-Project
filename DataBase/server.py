@@ -3,7 +3,7 @@ import sys
 import time
 import json
 import random
-import threading
+# import threading
 
 shardsNames = [
     "a-g",
@@ -18,7 +18,7 @@ SHARDS = {
     2: {"available": True, "master": 0, "machines": ["sh3m", "sh3r1", "sh3r2"]},
     3: {"available": True, "master": 0, "machines": ["sh4m", "sh4r1", "sh4r2"]}
 }
-TIME_OUT = 3000
+TIME_OUT = 10000
 DOC = """==========================================================================================================================================
 available commands:
 ====================
@@ -33,15 +33,6 @@ Notes:
 3- optional feilds may lead to instructions not being excuted properly or not excuted at all which it totally your responsibility XD
 =========================================================================================================================================="""
 
-def getShard(username):
-    userkey = username[0].lower()
-    shard = 0
-    for key in shards:
-        shard = shard + 1
-        symbols = key.split("-")
-        if userkey >= symbols[0] and userkey <= symbols[1]:
-            return shard
-    return False
 
 def getShard(username):
     userkey = username[0].lower()
@@ -52,6 +43,7 @@ def getShard(username):
         if userkey >= symbols[0] and userkey <= symbols[1]:
             return shard
     return False
+
 
 def dropShard(shard_index):
     shard = SHARDS[shard_index]
@@ -126,6 +118,8 @@ class Server:
             if machine in message:
                 ack_received = True
 
+        if not ack_received:
+            print("machine %s is dead" % machine)
         return ack_received
 
     def signin(self, username, password):
@@ -157,15 +151,17 @@ class Server:
 
     def insertInReplicas(self, shard, query):
         replicas = getActiveRelicas(shard)
-        for replica in replicas:
-            print(replica)
-            threading.Thread(target=self.insertInReplica, args=(replica, query,)).start()
+        if replicas:
+            for replica in replicas:
+                self.insertInReplica(replica, query)
+                # print(replica)
+                # threading.Thread(target=self.insertInReplica, args=(replica, query,)).start()
 
     def insertInReplica(self, machine, query):
         if self.ping(machine):
             self.run(machine, query)
-        else:
-            print("replica: %s is dead" % machine)
+        # else:
+        #     print("replica: %s is dead" % machine)
 
     def insert(self, shard, query):
         shard = shard - 1
