@@ -5,7 +5,7 @@ import zlib
 import os
 import zmq.ssh
 
-IP = "tcp://192.168.1.16:5557"
+IP = "tcp://192.168.43.87:5557"
 DATABASEIP = "tcp://database@server.os:3000"
 class Client():
     def __init__(self,username,mode,filename=None,videopath=None):
@@ -40,7 +40,7 @@ class Client():
         self.databaseSocket = zmq.Context().socket(zmq.REQ)
         
        # zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
-        self.databaseSocket.connect("tcp://10.5.50.212:3000")
+        self.databaseSocket.connect("tcp://192.168.43.53:3000")
         self.data = {"mode": "signin",
         "username":name,
         "password":password }
@@ -56,7 +56,7 @@ class Client():
         self.databaseSocket = zmq.Context().socket(zmq.REQ)
         
         #zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
-        self.databaseSocket.connect("tcp://10.5.50.212:3000")
+        self.databaseSocket.connect("tcp://192.168.43.53:3000")
         self.data = {"mode": "signup",
         "username":name,
         "password":password }
@@ -73,7 +73,10 @@ class Client():
         self.data = {"mode": self.mode}
         data_json = json.dumps(self.data)
         self.socket.send_json(data_json)
-        nodeIP = self.socket.recv_string()
+        nodeIP = self.socket.recv_json()
+        print(nodeIP)
+        #nodeIP = json.loads(nodeIP)
+        #nodeIP = nodeIP['uploadnode']
         print("NodeIP from Master:"+nodeIP)
 
 
@@ -132,7 +135,7 @@ class Client():
             numberOfChunks = numberOfChunks - 1
             self.socket2.send_json(dataJson)
             videochunk = self.socket2.recv()
-            print(videochunk)
+            # print(videochunk)
             video = zlib.decompress(videochunk)
             video = pickle.loads(video)
             readData += video
