@@ -4,7 +4,13 @@ import time
 import json
 import random
 import threading
-from parser import Parser, getShard
+
+shardsNames = [
+    "a-g",
+    "h-m",
+    "n-t",
+    "u-z"
+]
 
 SHARDS = {
     0: {"available": True, "master": 0, "machines": ["sh1m", "sh1r1", "sh1r2"]},
@@ -27,6 +33,16 @@ Notes:
 3- optional feilds may lead to instructions not being excuted properly or not excuted at all which it totally your responsibility XD
 =========================================================================================================================================="""
 
+
+def getShard(username):
+    userkey = username[0].lower()
+    shard = 0
+    for key in shardsNames:
+        shard = shard + 1
+        symbols = key.split("-")
+        if userkey >= symbols[0] and userkey <= symbols[1]:
+            return shard
+    return False
 
 def dropShard(shard_index):
     shard = SHARDS[shard_index]
@@ -225,30 +241,30 @@ def http(socket, server):
         socket.send_string(result)
 
 
-def cli(server):
-    parser = Parser()
-    print(DOC)
-    while True:
-        query = input("> ")
-        if query == "":
-            continue
-        query_arr = query.split()
-        instruction = query_arr[0]
+# def cli(server):
+#     parser = Parser()
+#     print(DOC)
+#     while True:
+#         query = input("> ")
+#         if query == "":
+#             continue
+#         query_arr = query.split()
+#         instruction = query_arr[0]
 
-        if instruction == "INSERT":
-            shard = parser.insert(query)
-            if shard:
-                threading.Thread(target=server.insert, args=(shard, query,)).start()
-            else:
-                print("Error: invalid instruction!!!")
-        elif instruction == "SELECT":
-            shard = parser.select(query)
-            if shard:
-                threading.Thread(target=server.select, args=(shard, query,)).start()
-            else:
-                print("Error: invalid instruction!!!")
-        else:
-            print("Error: Invalid Instruction!!!")
+#         if instruction == "INSERT":
+#             shard = parser.insert(query)
+#             if shard:
+#                 threading.Thread(target=server.insert, args=(shard, query,)).start()
+#             else:
+#                 print("Error: invalid instruction!!!")
+#         elif instruction == "SELECT":
+#             shard = parser.select(query)
+#             if shard:
+#                 threading.Thread(target=server.select, args=(shard, query,)).start()
+#             else:
+#                 print("Error: invalid instruction!!!")
+#         else:
+#             print("Error: Invalid Instruction!!!")
 
 
 if __name__ == "__main__":
@@ -262,9 +278,9 @@ if __name__ == "__main__":
     context = zmq.Context()
     socket = context.socket(zmq.ROUTER)
     socket.setsockopt(zmq.IDENTITY, b'server')
-    socket.bind("tcp://*:%s" % port)
+    socket.bind("tcp://192.168.1.13:%s" % port)
     http_socket = context.socket(zmq.REP)
-    http_socket.bind("tcp://*:%s" % http_port)
+    http_socket.bind("tcp://192.168.1.13:%s" % http_port)
 
     server = Server()
     server.setSocket(socket)
