@@ -29,6 +29,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         # if self.path == "/":
         #     html = getHtml("./signin.html")
         #     self.wfile.write(html)
+        elif (self.path == "/user"):
+            html = getHtml("./user.html")
+            self.wfile.write(html)
         elif (self.path == "/signin"):
             html = getHtml("./signin.html")
             self.wfile.write(html)
@@ -127,9 +130,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.filename = body = body.split("=")[1]
             client.setfilename(self.filename)
             client.setmode("download")
-            # TODO i need to view video to user
+            
             video = client.run()
-
-
+            html = getHtml("./vidwoshow1.html")
+            self.wfile.write(html)
+            htmlvideo = ""
+            self.wfile.write(htmlvideo)
+            html = getHtml("./vidwoshow2.html")
+            self.wfile.write(html)
+            
 httpd = HTTPServer(('localhost', 8000), SimpleHTTPRequestHandler)
 httpd.serve_forever()
