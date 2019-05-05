@@ -13,10 +13,10 @@ replicaIPs = {}
 notifyReplicaIPs = {}
 downloadUploadIPs = {}
 NUMBER_OF_DOWNLOAD_MIRRORS = 1
-NUMBER_OF_NODES = 2
+NUMBER_OF_NODES = 4
 NUMBER_OF_PROCESSES = 3
 MIN_NUMBER_OF_COPYS = 3
-MY_IP = "192.168.1.17"
+MY_IP = "192.168.1.7"
 NOTIFY_REPLICA_PORT = "5410"
 NUMBER_OF_REPLICAS = 2
 TIME_OUT = 3
@@ -287,10 +287,10 @@ def server(id,port):
 
 def initializeConstants():
     machineIPs = [
-        "192.168.1.17",
-        "192.168.1.8",
-        "192.168.43.53",
-        "192.168.43.53"
+        "192.168.1.7",
+        "192.168.1.15",
+        "192.168.1.9",
+        "192.168.1.13"
     ]
 
 

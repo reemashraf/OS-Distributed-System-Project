@@ -21,7 +21,7 @@ replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
-MASTER_IP = "192.168.1.17"
+MASTER_IP = "192.168.1.7"
 MACHINE_IP = "192.168.1.17"
 machine_name = 'A'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
