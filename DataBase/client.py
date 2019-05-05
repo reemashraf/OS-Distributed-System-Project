@@ -1,8 +1,63 @@
 import sys
 import zmq
 import json
-from parser import*
 import mysql.connector as MySQLdb
+
+
+def getInsertValues(query):
+        query_arr = query.split()
+        if (query_arr[0] != "INSERT") or (query_arr[1] != "INTO") or (query_arr[2] != "users"):
+            return False
+
+        params = ""
+        for i in range(3, len(query_arr)):
+            if i == len(query_arr)-1:
+                params = params + query_arr[i]
+            else:
+                params = params + query_arr[i] + ' '
+
+        values = params
+        columns = None
+        username = 0
+        password = 1
+        if "VALUES" in params:
+            params = params.split("VALUES")
+            columns = params[0]
+            values = params[1]
+
+            columns = columns.replace(" ", "")
+            columns = columns.replace("(", "")
+            columns = columns.replace(")", "")
+            columns = columns.split(",")
+
+            if "username" not in columns:
+                return False
+            if "password" not in columns:
+                return False
+
+            for i in range(len(columns)):
+                if columns[i] == "username":
+                    username = i
+                if columns[i] == "password":
+                    password = i
+
+        values = values.replace(" ", "")
+        values = values.replace("(", "")
+        values = values.replace(")", "")
+        values = values.split(",")
+
+        for value in values:
+            if value[0] != "'" or value[len(value)-1] != "'":
+                return False
+
+        temp = []
+        for value in values:
+            temp.append(value.replace("'", ""))
+        values = temp
+        auth_params = []
+        auth_params.append(values[username])
+        auth_params.append(values[password])
+        return tuple(auth_params)
 
 
 class Client:
@@ -86,7 +141,7 @@ if __name__ == "__main__":
     context = zmq.Context()
     socket = context.socket(zmq.DEALER)
     socket.setsockopt(zmq.IDENTITY, bytes(name, 'utf-8'))
-    socket.connect("tcp://192.168.43.113:%s" % port)
+    socket.connect("tcp://192.168.43.53:%s" % port)
 
     client = Client(name, database_ip, database_port, database_name, socket)
     print("Client was created successfully waiting for server commands")
