@@ -21,9 +21,9 @@ replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
-MASTER_IP = "192.168.43.87"
-MACHINE_IP = "192.168.43.66"
-machine_name = 'B'
+MASTER_IP = "192.168.1.7"
+MACHINE_IP = "192.168.1.13"
+machine_name = 'D'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
@@ -243,7 +243,7 @@ def run_alive():
 
 if __name__ == '__main__':
     processes_alive = Process(target=run_alive)
-    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 3)
+    ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
     processes_list = []
     for i in range(NUMBER_OF_PROCESSES):
         processes_list.append(Process(target = run ,args=(i , ports_list[i])))
