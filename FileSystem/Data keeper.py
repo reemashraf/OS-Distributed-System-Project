@@ -23,7 +23,7 @@ NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.1.7"
 MACHINE_IP = "192.168.1.13"
-machine_name = 'D'
+machine_name = 'C'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
