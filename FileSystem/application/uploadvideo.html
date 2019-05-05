@@ -30,7 +30,7 @@
 	<div class="container-contact100">
 		<div class="wrap-contact100">
 			<!-- action="/videoupload" -->
-			<form id="formy" class="contact100-form validate-form" method="POST">
+			<form id="formy" class="contact100-form validate-form" method="POST" >
 				<span class="contact100-form-title">
 					Upload_Video
 				</span>
@@ -43,17 +43,20 @@
 					<span class="label-input100">Video</span>
 					<br>
 					<br>
-					<button class="input100" onclick="fu()">Upload File</button>
-					<input class="input100" style="display: none" type="file" id = "video_path" name="video_path" accept="video/*">
+					<!-- <button class="input100" onclick="fu()">Upload File</button> -->
+					<input class="input100" type="file" name="video_path" id="video_path" accept="video/*">
+					<!-- <input type="hidden" id="video_path_input" name="video_path" value=""> -->
 				</div>
 				
-				<script type="text/javascript">
+				<!-- <script type="text/javascript">
 					function fu() {
-						document.getElementById('video_path').click();
+						// document.getElementById('video_path').click();
 					   	var fil = document.getElementById('video_path');
+					   	var input = document.getElementById('video_path_input');
+					   	input.value = fil.value;
 					   	alert(fil.value);
 					}
-				</script>
+				</script> -->
 
 				<div class="container-contact100-form-btn">
 					<div class="wrap-contact100-form-btn">
