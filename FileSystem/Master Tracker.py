@@ -13,7 +13,7 @@ replicaIPs = {}
 notifyReplicaIPs = {}
 downloadUploadIPs = {}
 NUMBER_OF_DOWNLOAD_MIRRORS = 1
-NUMBER_OF_NODES = 4
+NUMBER_OF_NODES = 3
 NUMBER_OF_PROCESSES = 3
 MIN_NUMBER_OF_COPYS = 3
 MY_IP = "192.168.1.7"
@@ -289,8 +289,8 @@ def initializeConstants():
     machineIPs = [
         "192.168.1.7",
         "192.168.1.15",
-        "192.168.1.9",
-        "192.168.1.13"
+        "192.168.1.13",
+        "192.168.1.9"
     ]
 
 

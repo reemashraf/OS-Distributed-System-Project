@@ -117,39 +117,39 @@ def replicate():
     socket_master_replicate = context.socket(zmq.REP)
     socket_master_replicate.bind("tcp://*:%s" % notify_replicate_port)
 
-    parsed_json = json.loads(socket_master_replicate.recv_json())
-    replica_list = parsed_json["replicalist"]
+    while(True):
+        parsed_json = json.loads(socket_master_replicate.recv_json())
+        replica_list = parsed_json["replicalist"]
 
-    socket_master_replicate.send_string("ACK, replication info recieved")
-    socket_master_replicate.close()
-    #here other nodes act as servers the one responsible for sending is the client
-    #connection with data nodes
-    print ("Connecting to server (replica dataNodes)...")
-    socket = context.socket(zmq.REQ)
-    print(replica_list)
-    #list_values = [ replica_address for replica_address in replica_list.values()]
-    for replica_address in replica_list:
-        print(replica_address)
-        print( "type is", type(replica_address))
-        socket.connect ("tcp://%s" %replica_address)
-    
-    extension_index = len(parsed_json["filename"])
-    if "." in parsed_json["filename"]:
-        extension_index = parsed_json["filename"].rfind(".")
-    directory = "./" + parsed_json["username"] + "/"+str(parsed_json["filename"])[: extension_index]
-    file_path = directory + "/"+ parsed_json["filename"]
-    
-    f = open(file_path , 'rb')
-    p = pickle.dumps(f.read())
-    z = zlib.compress(p)
-    f.close()
+        socket_master_replicate.send_string("ACK, replication info recieved")
+        #here other nodes act as servers the one responsible for sending is the client
+        #connection with data nodes
+        print ("Connecting to server (replica dataNodes)...")
+        socket = context.socket(zmq.REQ)
+        print(replica_list)
+        #list_values = [ replica_address for replica_address in replica_list.values()]
+        for replica_address in replica_list:
+            print(replica_address)
+            print( "type is", type(replica_address))
+            socket.connect ("tcp://%s" %replica_address)
+        
+        extension_index = len(parsed_json["filename"])
+        if "." in parsed_json["filename"]:
+            extension_index = parsed_json["filename"].rfind(".")
+        directory = "./" + parsed_json["username"] + "/"+str(parsed_json["filename"])[: extension_index]
+        file_path = directory + "/"+ parsed_json["filename"]
+        
+        f = open(file_path , 'rb')
+        p = pickle.dumps(f.read())
+        z = zlib.compress(p)
+        f.close()
 
-    parsed_json["file"] = z
-    for i in range(len(replica_list)):
-        socket.send(pickle.dumps(parsed_json))
-        ACK = socket.recv_string()
-        print("ack after sending json header" , ACK)
-    socket.close()
+        parsed_json["file"] = z
+        for i in range(len(replica_list)):
+            socket.send(pickle.dumps(parsed_json))
+            ACK = socket.recv_string()
+            print("ack after sending json header" , ACK)
+        socket.close()
 
 def recieve_replica(replica_port):
     context = zmq.Context()
