@@ -22,8 +22,8 @@ number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
 MASTER_IP = "192.168.43.87"
-MACHINE_IP = "192.168.43.53"
-machine_name = 'C'
+MACHINE_IP = "192.168.43.66"
+machine_name = 'B'
 ##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
 
 def send_alive(): #tested and works fine with the master
