@@ -26,12 +26,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             html = getHtml("./user.html")
             self.wfile.write(html)
 
-        # if self.path == "/":
-        #     html = getHtml("./signin.html")
-        #     self.wfile.write(html)
-        elif (self.path == "/user"):
-            html = getHtml("./user.html")
+        if self.path == "/database":
+            html = getHtml("./signin.html")
             self.wfile.write(html)
+        
         elif (self.path == "/signin"):
             html = getHtml("./signin.html")
             self.wfile.write(html)
@@ -58,86 +56,102 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(path)
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        body = self.rfile.read(content_length)
-        self.send_response(200)
-        self.end_headers()
-        if (self.path == "/user"):
-            body = body.decode()
-            body = body.split("&")
-            self.username = body[0]
-            self.username = self.username.split("=")[1]
-            self.mode = body[1]  #TODO double check it if body[1] or body only 
-            self.mode = self.mode.split("=")[1].lower()
-            client.setusername(self.username)   
-            client.setmode(self.mode)
-            if (self.mode == "upload"):
-                html = getHtml("./uploadvideo.html")
-            else:
-                html = getHtml("./listfiles.html")
+         
+        if (self.path == "/user2"):
+            self.send_response(200)
+            self.end_headers()
+            print("aywa hena")
+            html = getHtml("./user.html")
             self.wfile.write(html)
+        else:
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+            self.send_response(200)
+            self.end_headers()
+            if (self.path == "/user"):
+                body = body.decode()
+                body = body.split("&")
+                self.username = body[0]
+                self.username = self.username.split("=")[1]
+                self.mode = body[1]  #TODO double check it if body[1] or body only 
+                self.mode = self.mode.split("=")[1].lower()
+                client.setusername(self.username)   
+                client.setmode(self.mode)
+                if (self.mode == "upload"):
+                    print(self.mode)
+                    html = getHtml("./uploadvideo.html")
+                else:
+                    html = getHtml("./listfiles.html")
+                self.wfile.write(html)
 
-        elif (self.path == "/signin"):
-            body = body.decode()
-            body = body.split("&")
-            self.username = body[0]
-            self.username = self.username.split("=")[1]
-            password = body[1]
-            password =password.split("=")[1]
-            if bool(int(client.login(self.username,password))):
-                html = getHtml("./user.html")
-            else:
-                html = getHtml("./Error2.html")
-            self.wfile.write(html)
+            elif (self.path == "/signin"):
+                body = body.decode()
+                body = body.split("&")
+                username = body[0]
+                username = username.split("=")[1]
+                password = body[1]
+                password =password.split("=")[1]
+                if bool(int(client.login(username,password))):
+                    html = getHtml("./success2.html")
+                else:
+                    html = getHtml("./Error2.html")
+                self.wfile.write(html)
 
-        elif (self.path == "/signup"):
-            body = body.decode()
-            body = body.split("&")
-            self.username = body[0]
-            self.username = self.username.split("=")[1]
-            password = body[1]
-            password =password.split("=")[1]
-            print(password)
-            print(self.username)
-            if bool(int(client.signup(self.username,password))):
-                html = getHtml("./user.html")
-            else:
-                #Error Exists
-                html = getHtml("./Error1.html")
-            self.wfile.write(html)
+            elif (self.path == "/signup"):
+                body = body.decode()
+                body = body.split("&")
+                username = body[0]
+                username = username.split("=")[1]
+                password = body[1]
+                password =password.split("=")[1]
+                print(password)
+                print(username)
+                if bool(int(client.signup(username,password))):
+                    html = getHtml("./success3.html")
+                else:
+                    #Error Exists
+                    html = getHtml("./Error1.html")
+                self.wfile.write(html)
 
-        elif (self.path == "/videoupload"):
-            print(body)
-            body = body.decode()
-            body = body.split("&")
-            self.filename = body[0]
-            self.filename = self.filename.split("=")[1]
-            self.videopath = body[1]
-            self.videopath = self.videopath.split("=")[1]
-            #print(self.videopath)
-            client.setfilename(self.filename)
-            client.setvideopath(self.videopath)  #TODO I have to update to full path
-            print(client.username)
-            print(client.filename)
-            print(client.videopath)
-            message = client.run()
-            # TODO i need to view to user success message or fail message
-            print(message)
+            elif (self.path == "/videoupload"):
+                print(body)
+                body = body.decode()
+                body = body.split("&")
+                self.filename = body[0]
+                self.filename = self.filename.split("=")[1]
+                self.videopath = body[1]
+                self.videopath = self.videopath.split("=")[1]
+                #print(self.videopath)
+                client.setfilename(self.filename)
+                client.setvideopath(self.videopath)  #TODO I have to update to full path
+                print(client.username)
+                print(client.filename)
+                print(client.videopath)
+                message = client.run()
+                if "no mirror list found" in message :
+                    html = getHtml("./Error4.html")
+                elif "File already exists"in message :
+                    html = getHtml("./Error3.html")
+                else: 
+                    html = getHtml("./success.html")
+                self.wfile.write(html)
 
 
-        elif (self.path == "/download"):
-            body = body.decode()
-            self.filename = body = body.split("=")[1]
-            client.setfilename(self.filename)
-            client.setmode("download")
-            
-            video = client.run()
-            html = getHtml("./vidwoshow1.html")
-            self.wfile.write(html)
-            htmlvideo = ""
-            self.wfile.write(htmlvideo)
-            html = getHtml("./vidwoshow2.html")
-            self.wfile.write(html)
+            elif (self.path == "/download"):
+                body = body.decode()
+                self.filename = body = body.split("=")[1]
+                client.setfilename(self.filename)
+                client.setmode("download")
+                
+                video = client.run()
+                print(video[1:])
+                html = getHtml("./videoshow1.html")
+                self.wfile.write(html)
+                htmlvideo = "<source src='"+video[1:] +"' type='video/mp4'>"
+                htmlvideo = bytes(htmlvideo,'utf-8')
+                self.wfile.write(htmlvideo)
+                html = getHtml("./videoshow2.html")
+                self.wfile.write(html)
             
 httpd = HTTPServer(('localhost', 8000), SimpleHTTPRequestHandler)
 httpd.serve_forever()

@@ -9,56 +9,52 @@ import pickle
 from chunk import *
 import threading
 import socket as sc
+import random
 
-my_ip = sc.gethostbyname(sc.gethostname())
 alive_port = 5555  #port where thre process that sends alive message is sent
 #client_server_port = 5580  #port where thre processes that uploads and downloads
 topic_alive = "alive"
-master_ACK_port = 5560
+master_ACK_port = 5558 + 2*random.randint(0 , 2)
 notify_replicate_port = 5410
 process_order = "A"
-replica_port = 5526
+# replica_port = 5526
 number_of_replicas = 2
 NUMBER_OF_PROCESSES = 3
 start_port = 5580 
-MASTER_IP = "192.168.1.7"
-MACHINE_IP = "192.168.1.13"
-machine_name = 'C'
-##if file uploaded duplicate name notify the client or pad with underscores 3ashn ahmed myz3lish
+MASTER_IP = "192.168.43.87"
+machine_name = 'D'
 
-def send_alive(): #tested and works fine with the master
+
+def send_alive(): 
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     print("before connect")
     socket.connect("tcp://%s:%s" % (MASTER_IP,alive_port))
     print("alive process connected")
     while True:
-        # message = [ 1 , socket.gethostbyname(socket.gethostname()) ]
         message = "%s %s"%(topic_alive , machine_name)
-        # socket.send_string(topic , zmq.SNDMORE)
         socket.send_string(message)
-        # print("finished sending alive message")
-        sleep(1)#wait for one second before sending the next alive message
+        sleep(1)
         
         
 def download_uplaod(process_id , client_server_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    print("process_id",process_id," I took port %s"%client_server_port)
+    print("process_id",process_id,"inside download upload"," I took port %s"%client_server_port)
     socket.bind("tcp://*:%s" %client_server_port)
-    print("finished binding")
     while True:
         message = socket.recv_json()
         parsed_json = json.loads(message)
         print(parsed_json["mode"]) 
-        print("recieved header from client")
+        print("recieved header from client download or upload operation")
         if(parsed_json["mode"] == "upload"):
+            print("operation upload")
             socket.send_string("ACK")
             print("sent ACK to client")
             message = socket.recv()
             p = zlib.decompress(message)
             data = pickle.loads(p)
-            print("finished recieving")
+            print("finished recieving file to be uploaded from client")
             socket.send_string("finished writting file, success")
             extension_index = len(parsed_json["filename"])
             if "." in parsed_json["filename"]:
@@ -70,11 +66,11 @@ def download_uplaod(process_id , client_server_port):
                 f.write(data)
             ####will slice here#### ###done and tested#######
             number_of_chunks = slice_file(directory ,  parsed_json["filename"] , 64*1024)
-            ########change to connect
+            ########change to connect###############
             socket_master_ack = context.socket(zmq.REQ)
             socket_master_ack.connect("tcp://%s:%s" % (MASTER_IP,master_ACK_port) )
             header_data = {
-                "machine": machine_name, ##ID instead don't forget to modify
+                "machine": machine_name, 
                 "username": parsed_json["username"],
                 "filename": parsed_json["filename"],
                 "numberofchunks": number_of_chunks
@@ -82,15 +78,11 @@ def download_uplaod(process_id , client_server_port):
             header_data_sent_to_master = json.dumps(header_data)
             socket_master_ack.send_json(header_data_sent_to_master)
             ackAfterUpload = socket_master_ack.recv_string()
-            # replica_list_json = socket_master_ack.recv_json()
-            # replica_list = json.loads(replica_list_json)
-            #####TO_do replicate to other machines#######
             '''
             will send file path(comelete file path) from the client, and replica list, parsed json
             '''
-           # replicate(directory + "/"+ parsed_json["filename"] , replica_list , parsed_json)
         elif(parsed_json["mode"] == "download"):
-            print("inside download")
+            print("operation download")
             print(machine_name)
             chunk_number = parsed_json["chunknumber"]
             extension_index = len(parsed_json["filename"])
@@ -129,8 +121,7 @@ def replicate():
         print(replica_list)
         #list_values = [ replica_address for replica_address in replica_list.values()]
         for replica_address in replica_list:
-            print(replica_address)
-            print( "type is", type(replica_address))
+            print("replica address:", replica_address)
             socket.connect ("tcp://%s" %replica_address)
         
         extension_index = len(parsed_json["filename"])
@@ -148,29 +139,22 @@ def replicate():
         for i in range(len(replica_list)):
             socket.send(pickle.dumps(parsed_json))
             ACK = socket.recv_string()
-            print("ack after sending json header" , ACK)
-        socket.close()
+            print("ack received after sending data to replicatio data nodes:" , ACK)
+        # socket.close()
 
 def recieve_replica(replica_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:%s" % replica_port)
-    print("finished binding to replicas")
+    print("finished binding to receive replicas")
     while True:
-    #json = socket.recv_json()
-    #parsed_json = json.loads()
-    #socket.send_string("AY 7aga") #received the json and ACK is sent
-
         message = socket.recv()#file and json is received
-        print("I received replication request")
+        print("received replication request")
         message = pickle.loads(message)
         parsed_json = message
         z = parsed_json["file"]
         p = zlib.decompress(z)
         sent_file = pickle.loads(p)
-        
-        #p = zlib.decompress(message)
-        #data = pickle.loads(p)
         extension_index = len(parsed_json["filename"])
         if "." in parsed_json["filename"]:
             extension_index = parsed_json["filename"].rfind(".")
@@ -184,7 +168,7 @@ def recieve_replica(replica_port):
         socket.send_string("finished writting file, success")
 
 #for testing purposes only
-def send_ack_master():
+def send_ack_master():  
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://%s:%s" % (MASTER_IP,master_ACK_port) )
@@ -203,11 +187,9 @@ def send_ack_master():
 
 
 def replicate_test(file_path , replica_list):
-    #here other nodes act as servers the one responsible for sending is the client
     context = zmq.Context()
     print ("Connecting to server (replica dataNodes)...")
     socket = context.socket(zmq.REQ)
-    #list_values = [ replica_address for replica_address in replica_list.values()]
     for replica_address in replica_list:
         print(replica_list)
         socket.connect ("tcp://%s" %replica_address)
@@ -246,8 +228,10 @@ if __name__ == '__main__':
     processes_alive = Process(target=run_alive)
     ports_list = range(start_port , start_port+NUMBER_OF_PROCESSES*2+1 , 2)
     processes_list = []
+    print(ports_list)
     for i in range(NUMBER_OF_PROCESSES):
         processes_list.append(Process(target = run ,args=(i , ports_list[i])))
+        
 
     processes_alive.start()
     for process in processes_list:
@@ -256,27 +240,6 @@ if __name__ == '__main__':
     processes_alive.join()
     for i in range(NUMBER_OF_PROCESSES):
         processes_list[i].join()
-
-    #replica_list = send_ack_master()
-    # data = {
-    #     "filename" : "vid_1.mp4",
-    #     "username" : "reem_ashraf",
-    #     "mode"     : "download",
-    #     "numberofchunks": 52,
-    #     "machine" : "A"
-    # }
-    # context = zmq.Context()
-    # socket = context.socket(zmq.REQ)
-    # port = 5558
-    # socket.connect("tcp://192.168.1.9:%s" % port)
-    # data_dumped = json.dumps(data)
-    # socket.send_json(data_dumped)
-    # replica_lis = socket.recv_json()
-    # print(type(replica_lis))
-    # replica_lis = json.loads(replica_lis)
-    # print(type(replica_lis))
-    # replicate("vid_1.mp4" , replica_lis ,data)
-    # download_uplaod(client_server_port)
 
 
 

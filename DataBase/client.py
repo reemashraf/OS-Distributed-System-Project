@@ -3,6 +3,8 @@ import zmq
 import json
 import mysql.connector as MySQLdb
 
+SERVER_IP = "192.168.43.113"
+
 
 def getInsertValues(query):
     query_arr = query.split()
@@ -141,7 +143,7 @@ if __name__ == "__main__":
     context = zmq.Context()
     socket = context.socket(zmq.DEALER)
     socket.setsockopt(zmq.IDENTITY, bytes(name, 'utf-8'))
-    socket.connect("tcp://192.168.1.13:%s" % port)
+    socket.connect("tcp://%s:%s" % (SERVER_IP, port))
 
     client = Client(name, database_ip, database_port, database_name, socket)
     print("Client was created successfully waiting for server commands")

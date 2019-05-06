@@ -3,8 +3,9 @@ import sys
 import time
 import json
 import random
-# import threading
+from parser import Parser
 
+IP = "192.168.43.113"
 shardsNames = [
     "a-g",
     "h-m",
@@ -19,19 +20,17 @@ SHARDS = {
     3: {"available": True, "master": 0, "machines": ["sh4m", "sh4r1", "sh4r2"]}
 }
 TIME_OUT = 10000
-DOC = """==========================================================================================================================================
+DOC = """====================================================================================================
 available commands:
 ====================
 1- INSERT: adds new entery to database, args: \{TABLENAME* => STRING, FEILDS => STRING_ARRAY, VALUES => STIRNG_ARRAY\}
 2- SELECT: query database, args: \{TABLENAME* => STRING, FEILDS => STRING_ARRAY\}
-3- UPDATE: update or modifiy an existing database entry, args: \{TABLENAME* => STRING, FEILDS* => STRING_ARRAY, VALUES* => STRING_ARRAY\}
-4- DELETE: remove a database entry, args: \{TABLENAME* => STRING, ID* => INT\}
 Notes:
 =======
 1- input is case sensitive
 2- * feilds are required to be entered when using the function
-3- optional feilds may lead to instructions not being excuted properly or not excuted at all which it totally your responsibility XD
-=========================================================================================================================================="""
+3- username must be provided in both insert and select instruction as it's used to choose the propper shard
+===================================================================================================="""
 
 
 def getShard(username):
@@ -246,51 +245,60 @@ def http(socket, server):
         socket.send_string(result)
 
 
-# def cli(server):
-#     parser = Parser()
-#     print(DOC)
-#     while True:
-#         query = input("> ")
-#         if query == "":
-#             continue
-#         query_arr = query.split()
-#         instruction = query_arr[0]
+def cli(server):
+    parser = Parser()
+    print(DOC)
+    while True:
+        query = input("> ")
+        if query == "":
+            continue
+        query_arr = query.split()
+        instruction = query_arr[0]
 
-#         if instruction == "INSERT":
-#             shard = parser.insert(query)
-#             if shard:
-#                 threading.Thread(target=server.insert, args=(shard, query,)).start()
-#             else:
-#                 print("Error: invalid instruction!!!")
-#         elif instruction == "SELECT":
-#             shard = parser.select(query)
-#             if shard:
-#                 threading.Thread(target=server.select, args=(shard, query,)).start()
-#             else:
-#                 print("Error: invalid instruction!!!")
-#         else:
-#             print("Error: Invalid Instruction!!!")
+        if instruction == "INSERT":
+            shard = parser.insert(query)
+            if shard:
+                server.insert(shard, query)
+                # threading.Thread(target=server.insert, args=(shard, query,)).start()
+            else:
+                print("Error: invalid instruction!!!")
+        elif instruction == "SELECT":
+            shard = parser.select(query)
+            if shard:
+                server.select(shard, query)
+                # threading.Thread(target=server.select, args=(shard, query,)).start()
+            else:
+                print("Error: invalid instruction!!!")
+        else:
+            print("Error: Invalid Instruction!!!")
 
 
 if __name__ == "__main__":
     port = "5556"
     http_port = "3000"
+    mode = "http"
     if len(sys.argv) > 1:
-        port = sys.argv[1]
+        mode = sys.argv[1]
     if len(sys.argv) > 2:
-        http_port = sys.argv[2]
+        port = sys.argv[2]
+    if len(sys.argv) > 3:
+        http_port = sys.argv[3]
 
     context = zmq.Context()
     socket = context.socket(zmq.ROUTER)
     socket.setsockopt(zmq.IDENTITY, b'server')
-    socket.bind("tcp://192.168.1.13:%s" % port)
+    socket.bind("tcp://%s:%s" % (IP, port))
     http_socket = context.socket(zmq.REP)
-    http_socket.bind("tcp://192.168.1.13:%s" % http_port)
+    http_socket.bind("tcp://%s:%s" % (IP, http_port))
 
     server = Server()
     server.setSocket(socket)
     print("server was created successfully ready to receive client requests")
 
-    http(http_socket, server)
-    # threading.Thread(target=cli, args=(server,)).start()
-    # threading.Thread(target=http, args=(http_socket, server,)).start()
+    if mode == "http":
+        http(http_socket, server)
+    elif mode == "cli":
+        cli(server)
+    else:
+        print("Error: invalid mode!!!")
+        exit(2)

@@ -4,9 +4,9 @@ import pickle
 import zlib
 import os
 import zmq.ssh
-
-IP = "tcp://192.168.43.87:5557"
-DATABASEIP = "tcp://database@server.os:3000"
+import random
+IP = "tcp://192.168.43.87:" + str(5557 + 2*random.randint(0,2))
+DATABASEIP = "tcp://192.168.43.113:3000"
 class Client():
     def __init__(self,username,mode,filename=None,videopath=None):
         self.username = username
@@ -28,6 +28,7 @@ class Client():
         self.filename = file
     def setvideopath(self,path):
         self.videopath = path
+        
     def run(self):
         if (self.mode == "upload"):
             return (self.upload())
@@ -40,7 +41,7 @@ class Client():
         self.databaseSocket = zmq.Context().socket(zmq.REQ)
         
        # zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
-        self.databaseSocket.connect("tcp://192.168.43.53:3000")
+        self.databaseSocket.connect(DATABASEIP)
         self.data = {"mode": "signin",
         "username":name,
         "password":password }
@@ -55,8 +56,8 @@ class Client():
     def signup(self,name,password):
         self.databaseSocket = zmq.Context().socket(zmq.REQ)
         
-        #zmq.ssh.tunnel_connection(self.databaseSocket, "tcp://locahost:3000", "abdo@41.235.188.134:1337")
-        self.databaseSocket.connect("tcp://192.168.43.53:3000")
+
+        self.databaseSocket.connect(DATABASEIP)
         self.data = {"mode": "signup",
         "username":name,
         "password":password }
@@ -70,7 +71,7 @@ class Client():
 
     def upload(self):
         
-        self.data = {"mode": self.mode}
+        self.data = {"mode": self.mode,"username": self.username,"filename": self.filename}
         data_json = json.dumps(self.data)
         self.socket.send_json(data_json)
         nodeIP = self.socket.recv_json()
@@ -78,26 +79,26 @@ class Client():
         #nodeIP = json.loads(nodeIP)
         #nodeIP = nodeIP['uploadnode']
         print("NodeIP from Master:"+nodeIP)
+        if "error" in nodeIP :
+            return nodeIP
+        else :
+            self.socket2 = zmq.Context().socket(zmq.REQ)
+            self.socket2.connect("tcp://" + nodeIP)
+            print("connecting")
+            self.socket2.send_json(data_json)
+            print("send")
+            ack = self.socket2.recv_string()
+            print("Ack From datakeeper:"+ack)
 
-
-        self.data.update({"username": self.username,
-                     "filename": self.filename})
-        data_json = json.dumps(self.data)
-        self.socket2 = zmq.Context().socket(zmq.REQ)
-        self.socket2.connect("tcp://" + nodeIP)
-        self.socket2.send_json(data_json)
-        ack = self.socket2.recv_string()
-        print("Ack From datakeeper:"+ack)
-
-        f = open(self.videopath, "rb")
-        p = pickle.dumps(f.read())
-        compressed_file = zlib.compress(p)
-        f.close()
-        self.socket2.send(compressed_file)
-        ack = self.socket2.recv_string()
-        print("Ack2 From datakeeper:" + ack)
-        self.socket2.close()
-        return ack
+            f = open(self.videopath, "rb")
+            p = pickle.dumps(f.read())
+            compressed_file = zlib.compress(p)
+            f.close()
+            self.socket2.send(compressed_file)
+            ack = self.socket2.recv_string()
+            print("Ack2 From datakeeper:" + ack)
+            self.socket2.close()
+            return ack
 
     def getlist(self):
         self.data = {"mode": "fileslist",
@@ -143,5 +144,6 @@ class Client():
 
         with open(directory + "/" + self.data["filename"], 'wb') as f:
                 f.write(bytes(readData))
-        ###TODO Git all files m3 b3d and view
+        
         self.socket2.close()
+        return directory + "/" + self.data["filename"]

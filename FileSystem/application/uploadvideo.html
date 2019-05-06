@@ -27,25 +27,37 @@
 </head>
 <body> 
 
-
 	<div class="container-contact100">
 		<div class="wrap-contact100">
-			<form class="contact100-form validate-form" method="POST" action="/videoupload">
+			<!-- action="/videoupload" -->
+			<form id="formy" class="contact100-form validate-form" method="POST" action="/videoupload" >
 				<span class="contact100-form-title">
 					Upload_Video
 				</span>
 				<div class="wrap-input100 validate-input" data-validate="fileName is required">
 						<span class="label-input100">SaveName</span>
-						<input class="input100" type="text" name="savename" placeholder="Enter file save name">
+						<input class="input100" type="text" name="savename" required placeholder="Enter file save name">
 						<span class="focus-input100"></span>
 					</div>
 				<div class="wrap-input100 validate-input" data-validate="Video is required">
 					<span class="label-input100">Video</span>
 					<br>
 					<br>
-					<input class="input100" type="file" name="video_path" accept="video/*">
+					<!-- <button class="input100" onclick="fu()">Upload File</button> -->
+					<input class="input100" type="file" name="video_path" required id="video_path" accept="video/*">
+					<!-- <input type="hidden" id="video_path_input" name="video_path" value=""> -->
 				</div>
 				
+				<!-- <script type="text/javascript">
+					function fu() {
+						// document.getElementById('video_path').click();
+					   	var fil = document.getElementById('video_path');
+					   	var input = document.getElementById('video_path_input');
+					   	input.value = fil.value;
+					   	alert(fil.value);
+					}
+				</script> -->
+
 				<div class="container-contact100-form-btn">
 					<div class="wrap-contact100-form-btn">
 						<div class="contact100-form-bgbtn"></div>
